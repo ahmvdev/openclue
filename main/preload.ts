@@ -7,6 +7,9 @@ export const api = {
   onToggleTitlebar: (callback: (show: boolean) => void) =>
     ipcRenderer.on("toggle-titlebar", (_event, show) => callback(show)),
   close: () => ipcRenderer.send("app/close"),
+
+  increaseHeightFromBottom: (delta: number) =>
+    ipcRenderer.send("app/increase-height-bottom", delta),
 };
 
 contextBridge.exposeInMainWorld("electron", api);

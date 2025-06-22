@@ -74,3 +74,18 @@ ipcMain.on("app/maximize", () => {
 ipcMain.on("app/close", () => {
   app.quit();
 });
+
+ipcMain.on("app/increase-height-bottom", (_event, deltaHeight: number) => {
+  if (win) {
+    const bounds = win.getBounds();
+    win.setBounds(
+      {
+        x: bounds.x,
+        y: bounds.y, 
+        width: bounds.width,
+        height: bounds.height + deltaHeight, 
+      },
+      true 
+    );
+  }
+});
