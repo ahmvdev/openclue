@@ -2,13 +2,13 @@
 
 This is an open-source version of the app Cluely, without the voice transcription.
 
----
+
 
 ## Features/Usage
 
 - Ask whats on the screen and it will tell you and provide more information
 - The app takes a screenshot and sends the photo to the LLM requiring mininal effort
----
+
 
 ## Shortcuts
 
@@ -39,7 +39,6 @@ VITE_GEMINI_API_KEY=EXAMPLE_KEY_HERE
 npm run:electron dev
 ```
 
----
 
 
 ### Build app
@@ -53,9 +52,11 @@ npm run dist
 
 There you go!
 
+---
+
 ### Platform Support:
 I have only tested this on windows so far.
 
 Feedback appreciated. Thanks!
 
----
+
