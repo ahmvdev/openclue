@@ -15,8 +15,8 @@ This is an open-source version of the app Cluely, without the voice transcriptio
 
 ## Shortcuts
 
-- **Maximize or minimize** CTRL + SHIFT + K 
-- **Close the app completely** CTRL + SHIFT + D
+- **Maximize or minimize:** CTRL + SHIFT + K 
+- **Close the app completely:** CTRL + SHIFT + D
 
 ## Screenshots of usecases:
 ![1](https://github.com/user-attachments/assets/c8b1b296-e932-4d90-a3eb-f464d960be6f)
@@ -30,8 +30,13 @@ This is an open-source version of the app Cluely, without the voice transcriptio
 ```bash
 npm install
 ```
+2. **Create a `.env` file in the root directory and paste your GEMINI API KEY:**
 
-Start development server:
+```bash
+VITE_GEMINI_API_KEY=EXAMPLE_KEY_HERE
+```
+
+3. **Start development server**:
 
 ```bash
 npm run:electron dev
