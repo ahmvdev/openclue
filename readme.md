@@ -45,7 +45,7 @@ npm run:electron dev
 ---
 
 
-### Build for Production
+### Build app
 
 ```bash
 npm run dist
