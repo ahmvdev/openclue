@@ -1,11 +1,11 @@
 {
-    "name": "example",
+    "name": "openclue",
     "author": {
         "name": "Ra1NuX",
         "email": "ra1nux.01@gmail.com"
     },
     "version": "0.0.0",
-    "main": "electron/electron.ts",
+    "main": "app/index.js",
     "scripts": {
         "dev": "vite",
         "build:electron": "bun ./esbuild.config.mjs",
@@ -55,6 +55,7 @@
         "wait-on": "^8.0.2"
     },
     "build": {
+        "extends": null,
         "appId": "com.example",
         "productName": "example",
         "copyright": "Copyright © 2021 ${author}",
@@ -72,9 +73,8 @@
             "allowToChangeInstallationDirectory": true
         },
         "files": [
-            "dist/**/*",
-            "electron/**/*"
-        ],
+            "dist/**/*"
+                ],
         "directories": {
             "buildResources": "assets",
             "output": "dist_electron"
