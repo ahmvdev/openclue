@@ -1,4 +1,4 @@
-# Electron React TS Vite Tailwind Boilerplate
+# OpenClue
 
 This is an open-source version of the app Cluely, without the voice transcription.
 
@@ -14,6 +14,8 @@ This is an open-source version of the app Cluely, without the voice transcriptio
 ---
 
 ## Screenshots of usecases:
+![1](https://github.com/user-attachments/assets/c8b1b296-e932-4d90-a3eb-f464d960be6f)
+![2](https://github.com/user-attachments/assets/5f7f3f19-b6cb-4dd4-bb35-433f8b3fae0d)
 
 
 ## Shortcuts
