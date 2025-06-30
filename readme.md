@@ -30,7 +30,7 @@ This is an open-source version of the app Cluely, without the voice transcriptio
 ```bash
 npm install
 ```
-2. **Create a `.env` file in the root directory and paste your GEMINI API KEY:**
+2. **Create a `.env` file in the root directory and paste your API KEY:**
 
 ```bash
 VITE_GEMINI_API_KEY=EXAMPLE_KEY_HERE
@@ -47,8 +47,13 @@ npm run:electron dev
 
 ### Build app
 
+1. **Build the app**
 ```bash
 npm run dist
 ```
+
+2. Open it in `dist/win-unpacked`
+
+There you go!
 
 ---
