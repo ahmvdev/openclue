@@ -56,4 +56,9 @@ npm run dist
 
 There you go!
 
+### Platform Support:
+I have only tested this on windows so far.
+
+Feedback appreciated. Thanks!
+
 ---
