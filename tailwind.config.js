@@ -1,4 +1,5 @@
-/** @type {import('tailwindcss').Config} */
+import typography from '@tailwindcss/typography'
+
 export default {
   content: ["./src/**/*.{html,ts,tsx}"],
   darkMode: 'class',
@@ -14,5 +15,6 @@ export default {
         sfpro: ['"SF Pro Display"', 'sans-serif'],
       }
     }
-  }
+  },
+  plugins: [typography] 
 }

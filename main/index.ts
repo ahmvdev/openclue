@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, desktopCapturer, globalShortcut } from "electron";
 import serve from "electron-serve";
 import path, { join } from "path";
 
@@ -6,8 +6,8 @@ import { getURL } from "./lib/getUrl";
 import isDev from "./lib/isDev";
 
 if (!isDev) {
-    serve({ directory: join(__dirname, "renderer"), hostname: "example" });
-  }
+  serve({ directory: join(__dirname, "renderer"), hostname: "example" });
+}
 
 let win: BrowserWindow;
 
@@ -17,8 +17,8 @@ function createWindow() {
     height: 100,
     minWidth: 370,
     minHeight: 100,
-    frame:false,
-    resizable:false,
+    frame: false,
+    resizable: false,
     transparent: true,
     titleBarStyle: "hidden",
     icon: path.join(__dirname, "renderer", "icon.png"),
@@ -46,11 +46,27 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow();
 
+  globalShortcut.register("Control+Shift+K", () => {
+    if (!win) return;
+    if (win.isVisible()) {
+      win.hide();
+    } else {
+      win.show();
+      win.focus();
+    }
+  });
+ globalShortcut.register("Control+Shift+D", () => {
+    app.quit();
+  });
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
   });
+});
+
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
 });
 
 app.on("window-all-closed", () => {
@@ -81,11 +97,18 @@ ipcMain.on("app/increase-height-bottom", (_event, deltaHeight: number) => {
     win.setBounds(
       {
         x: bounds.x,
-        y: bounds.y, 
+        y: bounds.y,
         width: bounds.width,
-        height: bounds.height + deltaHeight, 
+        height: bounds.height + deltaHeight,
       },
-      true 
+      true
     );
   }
+});
+
+ipcMain.handle("take-screenshot", async () => {
+  const sources = await desktopCapturer.getSources({ types: ["screen"] });
+  const screen = sources[0];
+  const dataUrl = screen.thumbnail.toDataURL();
+  return dataUrl;
 });
