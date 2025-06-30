@@ -7,10 +7,7 @@ This is an open-source version of the app Cluely, without the voice transcriptio
 ## Features/Usage
 
 - Ask whats on the screen and it will tell you and provide more information
-- Some use cases:
-    - "Explain this thing"
-    - "Whos this guy on the screen?"
-
+- The app takes a screenshot and sends the photo to the LLM requiring mininal effort
 ---
 
 ## Shortcuts
@@ -55,5 +52,10 @@ npm run dist
 2. Open it in `dist/win-unpacked`
 
 There you go!
+
+### Platform Support:
+I have only tested this on windows so far.
+
+Feedback appreciated. Thanks!
 
 ---
