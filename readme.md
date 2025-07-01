@@ -1,4 +1,76 @@
-# OpenClue Kai - 次世代AI画面アシスタント
+# OpenClue Kai
+
+**This project is a fork of [ahmvdev/openclue](https://github.com/ahmvdev/openclue).**
+
+**本プロジェクトは [ahmvdev/openclue](https://github.com/ahmvdev/openclue) のフォークです。**
+
+---
+
+## Overview (English)
+OpenClue Kai is an open-source, next-generation AI screen assistant inspired by Cluely. It analyzes your PC screen, operation history, and (in the future) voice in real time, deeply understands context, and proactively supports your work and learning. It aims to surpass Cluely with advanced context awareness, structured advice, and beautiful, customizable UI/UX.
+
+### Key Features
+- **Gemini 2.5 API support**: Multimodal (image/text/history), structured output (TODO list/summary), model auto-selection, function calling ready
+- **Real-time screen monitoring**: Automatic screenshots, image diff detection, active window history integration
+- **Contextual & proactive advice**: AI analyzes recent screen, operation, and context to generate optimal advice and TODOs
+- **Structured advice**: Generates TODO lists and summaries in JSON, with UI for checking, saving, restoring, and persisting
+- **Modern UI/UX**: Beautiful design, animation, toast notifications, system info (memory, battery, monitoring status)
+- **Flexible settings**: Adjust monitoring interval, sensitivity, API key, history count, etc. from the UI
+- **Shortcuts**: Mac/Win support for monitoring, screenshot, advice, window move, quit, etc.
+- **Privacy conscious**: Image diff is local, API sends minimal data
+
+### Use Cases
+- Meeting, interview, study, work support, productivity analysis, break suggestions, and more
+
+### Future Roadmap
+- Voice analysis, multi-screen, cloud sync, calendar/task integration, automated function calling, more languages, etc.
+
+### Installation & Setup
+1. Install Node.js 18+
+2. Clone this repository
+3. Run `npm install` to install dependencies
+4. Set your Gemini API Key in `.env` ([Get your key here](https://makersuite.google.com/app/apikey))
+5. Start in development mode: `npm run electron:dev`
+
+### Build & Distribution
+- Windows: `npm run dist:win`
+- macOS: `npm run dist:mac`
+- Linux: `npm run dist:linux`
+
+### Shortcuts
+| Feature | Windows/Linux | Mac |
+|---------|---------------|-----|
+| Toggle window | Ctrl+B | ⌘+B |
+| Screenshot | Ctrl+H | ⌘+H |
+| Get solution | Ctrl+Enter | ⌘+Enter |
+| Toggle monitoring | Ctrl+M | ⌘+M |
+| Move window | Ctrl+Arrow | ⌘+Arrow |
+| Quit app | Ctrl+Q | ⌘+Q |
+| ... | ... | ... |
+
+### Customization
+- Adjust monitoring interval (1-30s), sensitivity (1-50%), API key, history count, etc. from the UI
+- TODO list check state is auto-saved/restored
+
+### Tech Stack
+- React + TypeScript + Vite + Electron + Tailwind CSS + Framer Motion
+- Google Gemini API (2.5 Pro/Flash/Flash-Lite, multimodal, JSON output)
+- electron-store for persistence
+
+### Contribution
+- See [DEVELOPMENT.md](./DEVELOPMENT.md) for details
+- Pull requests welcome!
+
+### Icon
+- Windows: icon.ico (multi-size)
+- macOS: icon.icns
+- Linux: icon.png (512/256/128/64/32/16px)
+- Simple, brand color, transparent/monotone background recommended
+
+### License
+MIT License (c) 2025 Ahmad Saeed
+
+---
 
 ## 概要
 Cluelyの思想を継承しつつ、AIがPC画面・操作履歴・音声（今後対応）をリアルタイム解析し、文脈を深く理解して自発的に業務や学習をサポートする"Cluely超え"のオープンソースAIアシスタント。

@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { FaSync, FaTrash, FaEye, FaEyeSlash, FaClock } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
 
 interface AdvicePanelProps {
   advice: string | null;
@@ -15,6 +16,7 @@ const AdvicePanel: React.FC<AdvicePanelProps> = ({
   onClear,
   onToggleMonitoring,
 }) => {
+  const { t } = useTranslation();
   if (!advice && !isMonitoring) {
     return null;
   }
@@ -42,12 +44,12 @@ const AdvicePanel: React.FC<AdvicePanelProps> = ({
               {isMonitoring ? (
                 <>
                   <FaEye className="w-4 h-4" />
-                  <span>画面監視中</span>
+                  <span>{t('advicePanel.monitoring')}</span>
                 </>
               ) : (
                 <>
                   <FaEyeSlash className="w-4 h-4" />
-                  <span>アドバイス</span>
+                  <span>{t('advicePanel.advice')}</span>
                 </>
               )}
             </h3>
@@ -71,7 +73,7 @@ const AdvicePanel: React.FC<AdvicePanelProps> = ({
                 <button
                   onClick={onClear}
                   className="p-1 rounded hover:bg-white/50 transition-colors"
-                  title="クリア"
+                  title={t('advicePanel.clear')}
                 >
                   <FaTrash className="w-3 h-3 text-gray-500" />
                 </button>

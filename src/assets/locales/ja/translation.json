@@ -1,0 +1,69 @@
+{
+  "appName": "OpenClue Kai",
+  "version": "v1.0.0",
+  "monitoringOn": "監視を停止",
+  "monitoringOff": "監視を開始",
+  "settings": "設定",
+  "shortcuts": "ショートカット一覧",
+  "minimize": "最小化",
+  "close": "閉じる",
+  "shortcutsTitle": "ショートカット一覧",
+  "shortcut": {
+    "toggleWindow": "ウィンドウの表示/非表示",
+    "screenshot": "スクリーンショットを撮る",
+    "getSolution": "解決策を取得",
+    "toggleMonitoring": "画面監視の切り替え",
+    "moveUp": "上に移動",
+    "moveDown": "下に移動",
+    "moveLeft": "左に移動",
+    "moveRight": "右に移動",
+    "quit": "アプリを終了"
+  },
+  "advicePanel": {
+    "monitoring": "画面監視中",
+    "advice": "アドバイス",
+    "monitoringMessage": "画面の変化を監視しています...",
+    "startMonitoring": "監視を開始",
+    "clear": "クリア"
+  },
+  "monitorSettings": {
+    "title": "設定",
+    "apiKey": "Gemini API Key",
+    "apiKeyPlaceholder": "API Keyを入力してください",
+    "save": "保存",
+    "getApiKey": "API Keyを取得",
+    "monitoring": "画面監視",
+    "interval": "監視間隔: {{sec}}秒",
+    "intervalMin": "1秒",
+    "intervalMax": "30秒",
+    "threshold": "変化検知感度: {{percent}}%",
+    "thresholdMin": "高感度 (1%)",
+    "thresholdMax": "低感度 (50%)",
+    "hint": "ヒント: 画面監視を有効にすると、設定した間隔で画面の変化を検出し、自動的にアドバイスを生成します。バッテリー使用時は長めの間隔を推奨します。"
+  },
+  "systemInfo": {
+    "memory": "メモリ",
+    "memoryStatusHigh": "高負荷",
+    "memoryStatusMedium": "中負荷",
+    "memoryStatusNormal": "正常",
+    "battery": "バッテリー",
+    "charging": "充電中",
+    "monitoring": "監視",
+    "monitoringActive": "アクティブ",
+    "monitoringInactive": "停止中",
+    "batteryWarning": "バッテリー残量が少ないため、監視を停止することを推奨します"
+  },
+  "app": {
+    "generateTodo": "TODOリスト・要点を生成",
+    "generating": "生成中...",
+    "summary": "要点:",
+    "todoList": "TODOリスト:",
+    "noSummary": "（要点なし）",
+    "adviceHistory": "アドバイス履歴（最新10件）",
+    "clearHistory": "履歴クリア",
+    "loading": "考え中...",
+    "inputPlaceholder": "質問を入力してください..."
+  },
+  "geminiKeyNotSet": "Gemini API Keyが設定されていません。設定画面からAPI Keyを設定してください。",
+  "geminiApiError": "Gemini APIの呼び出し中にエラーが発生しました。"
+} 

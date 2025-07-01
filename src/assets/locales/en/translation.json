@@ -1,0 +1,69 @@
+{
+  "appName": "OpenClue Kai",
+  "version": "v1.0.0",
+  "monitoringOn": "Stop Monitoring",
+  "monitoringOff": "Start Monitoring",
+  "settings": "Settings",
+  "shortcuts": "Shortcuts",
+  "minimize": "Minimize",
+  "close": "Close",
+  "shortcutsTitle": "Shortcuts",
+  "shortcut": {
+    "toggleWindow": "Toggle Window Visibility",
+    "screenshot": "Take Screenshot",
+    "getSolution": "Get Solution",
+    "toggleMonitoring": "Toggle Monitoring",
+    "moveUp": "Move Up",
+    "moveDown": "Move Down",
+    "moveLeft": "Move Left",
+    "moveRight": "Move Right",
+    "quit": "Quit App"
+  },
+  "advicePanel": {
+    "monitoring": "Monitoring",
+    "advice": "Advice",
+    "monitoringMessage": "Monitoring screen changes...",
+    "startMonitoring": "Start Monitoring",
+    "clear": "Clear"
+  },
+  "monitorSettings": {
+    "title": "Settings",
+    "apiKey": "Gemini API Key",
+    "apiKeyPlaceholder": "Enter your API Key",
+    "save": "Save",
+    "getApiKey": "Get API Key",
+    "monitoring": "Screen Monitoring",
+    "interval": "Monitoring Interval: {{sec}}s",
+    "intervalMin": "1s",
+    "intervalMax": "30s",
+    "threshold": "Change Sensitivity: {{percent}}%",
+    "thresholdMin": "High (1%)",
+    "thresholdMax": "Low (50%)",
+    "hint": "Hint: When screen monitoring is enabled, changes are detected at the specified interval and advice is generated automatically. For battery use, a longer interval is recommended."
+  },
+  "systemInfo": {
+    "memory": "Memory",
+    "memoryStatusHigh": "High Load",
+    "memoryStatusMedium": "Medium Load",
+    "memoryStatusNormal": "Normal",
+    "battery": "Battery",
+    "charging": "Charging",
+    "monitoring": "Monitoring",
+    "monitoringActive": "Active",
+    "monitoringInactive": "Inactive",
+    "batteryWarning": "Low battery. It is recommended to stop monitoring."
+  },
+  "app": {
+    "generateTodo": "Generate TODO List & Summary",
+    "generating": "Generating...",
+    "summary": "Summary:",
+    "todoList": "TODO List:",
+    "noSummary": "(No summary)",
+    "adviceHistory": "Advice History (Last 10)",
+    "clearHistory": "Clear History",
+    "loading": "Thinking...",
+    "inputPlaceholder": "Type your question..."
+  },
+  "geminiKeyNotSet": "Gemini API Key is not set. Please set it in the settings screen.",
+  "geminiApiError": "An error occurred while calling the Gemini API."
+} 

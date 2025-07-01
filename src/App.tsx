@@ -8,6 +8,8 @@ import ReactMarkdown from 'react-markdown';
 import { useScreenMonitor } from './hooks/useScreenMonitor';
 import { toast, Toaster } from 'react-hot-toast';
 import { callGeminiAPI } from './lib/geminiClient';
+import './i18n';
+import { useTranslation } from 'react-i18next';
 
 // 型定義拡張
 interface TodoItem {
@@ -22,6 +24,7 @@ interface StructuredAdvice {
 }
 
 function App() {
+  const { t, i18n } = useTranslation();
   const [isFocused, setIsFocused] = useState(false);
   const [text, setText] = useState('');
   const [hasResized, setHasResized] = useState(false);
@@ -90,7 +93,8 @@ function App() {
   useEffect(() => {
     const loadAdviceHistory = async () => {
       try {
-        const saved = await window.electron?.store.get('adviceHistory');
+        const langKey = `adviceHistory_${i18n.language.startsWith('en') ? 'en' : 'ja'}`;
+        const saved = await window.electron?.store.get(langKey);
         if (Array.isArray(saved)) {
           // 旧型式（string[]）→新型式（TodoItem[]）に変換
           const converted = saved.map((item: any) => ({
@@ -100,18 +104,22 @@ function App() {
               : undefined,
           }));
           setStructuredAdviceHistory(converted);
+        } else {
+          setStructuredAdviceHistory([]);
         }
       } catch (e) {}
     };
     loadAdviceHistory();
-  }, []);
+    // 言語切替時も履歴を切り替え
+  }, [i18n.language]);
 
   // --- 履歴の永続化: 保存 ---
   useEffect(() => {
     if (structuredAdviceHistory.length > 0) {
-      window.electron?.store.set('adviceHistory', structuredAdviceHistory);
+      const langKey = `adviceHistory_${i18n.language.startsWith('en') ? 'en' : 'ja'}`;
+      window.electron?.store.set(langKey, structuredAdviceHistory);
     }
-  }, [structuredAdviceHistory]);
+  }, [structuredAdviceHistory, i18n.language]);
 
   // structuredAdviceが更新されたら履歴に追加
   useEffect(() => {
@@ -138,7 +146,8 @@ function App() {
         return { ...item, todo: newTodo };
       });
       // 永続化
-      window.electron?.store.set('adviceHistory', arr);
+      const langKey = `adviceHistory_${i18n.language.startsWith('en') ? 'en' : 'ja'}`;
+      window.electron?.store.set(langKey, arr);
       return arr;
     });
   };
@@ -155,8 +164,9 @@ function App() {
   // --- 履歴クリア機能の永続化 ---
   const handleClearAdviceHistory = async () => {
     setStructuredAdviceHistory([]);
-    await window.electron?.store.delete('adviceHistory');
-    toast.success('アドバイス履歴をクリアしました');
+    const langKey = `adviceHistory_${i18n.language.startsWith('en') ? 'en' : 'ja'}`;
+    await window.electron?.store.delete(langKey);
+    toast.success(t('app.clearHistory') + ' ' + t('app.adviceHistory'));
   };
 
   // 履歴から選択したアドバイスを再表示
@@ -194,7 +204,7 @@ function App() {
 
   async function sendToGemini(base64Image: string, prompt: string): Promise<string> {
     if (!geminiApiKey) {
-      return 'Gemini API Keyが設定されていません。設定画面からAPI Keyを設定してください。';
+      return t('app.geminiKeyNotSet');
     }
     try {
       // 今後: モデルや履歴、構造化出力も柔軟に指定可能
@@ -205,11 +215,12 @@ function App() {
         imageBase64: base64Image,
         // history: [], // 必要に応じて履歴も渡せる
         outputFormat: 'text',
+        language: i18n.language.startsWith('en') ? 'en' : 'ja',
       });
       return typeof result === 'string' ? result : JSON.stringify(result);
     } catch (error: any) {
       console.error('Error calling Gemini API:', error);
-      return 'Gemini APIの呼び出し中にエラーが発生しました。';
+      return t('app.geminiApiError');
     }
   }
 
@@ -340,7 +351,7 @@ function App() {
         <div className="relative w-full max-w-md">
           <input
             ref={inputRef}
-            placeholder="質問を入力してください..."
+            placeholder={t('app.inputPlaceholder')}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onFocus={() => setIsFocused(true)}
@@ -401,19 +412,19 @@ function App() {
             disabled={structuring || screenHistory.length === 0}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-400"
           >
-            {structuring ? '生成中...' : 'TODOリスト・要点を生成'}
+            {structuring ? t('app.generating') : t('app.generateTodo')}
           </button>
           {/* 構造化アドバイス表示（最新） */}
           {structuredAdvice && (
             <div className="mt-3 bg-white/70 rounded-lg p-4 shadow-sm">
               {structuredAdvice.summary && (
                 <div className="mb-2 text-sm text-gray-700">
-                  <span className="font-bold">要点:</span> {structuredAdvice.summary}
+                  <span className="font-bold">{t('app.summary')}</span> {structuredAdvice.summary}
                 </div>
               )}
               {structuredAdvice.todo && structuredAdvice.todo.length > 0 && (
                 <div className="text-sm text-gray-700">
-                  <span className="font-bold">TODOリスト:</span>
+                  <span className="font-bold">{t('app.todoList')}</span>
                   <ul className="list-disc ml-6 mt-1">
                     {structuredAdvice.todo.map((item, idx) => (
                       <li key={idx} className="flex items-center gap-2">
@@ -439,13 +450,13 @@ function App() {
           {structuredAdviceHistory.length > 0 && (
             <div className="mt-6">
               <div className="font-bold text-xs text-gray-500 mb-1 flex items-center gap-2">
-                <span>アドバイス履歴（最新10件）</span>
+                <span>{t('app.adviceHistory')}</span>
                 <button
                   className="ml-auto text-xs text-red-400 hover:text-red-600 underline"
                   onClick={handleClearAdviceHistory}
                   type="button"
                 >
-                  履歴クリア
+                  {t('app.clearHistory')}
                 </button>
               </div>
               <ul className="divide-y divide-gray-200 bg-white/60 rounded-lg shadow-sm">
@@ -456,7 +467,7 @@ function App() {
                     onClick={() => handleSelectHistory(item)}
                   >
                     <div className="text-xs text-gray-700 flex items-center gap-2">
-                      <span>{item.summary ? item.summary.slice(0, 30) : '（要点なし）'}</span>
+                      <span>{item.summary ? item.summary.slice(0, 30) : t('app.noSummary')}</span>
                       <span className="ml-auto text-gray-400">{item.timestamp ? new Date(item.timestamp).toLocaleTimeString() : ''}</span>
                     </div>
                     {item.todo && item.todo.length > 0 && (
@@ -491,7 +502,7 @@ function App() {
               className="flex items-center gap-2 px-6 text-gray-600 font-medium"
             >
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
-              <span>考え中...</span>
+              <span>{t('app.loading')}</span>
             </motion.div>
           )}
 

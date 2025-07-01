@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaEye, FaEyeSlash, FaCog, FaTimes, FaWindowMinimize, FaQuestion } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 interface HeaderProps {
   onSettingsClick: () => void;
@@ -16,6 +17,7 @@ interface ShortcutInfo {
 const Header: React.FC<HeaderProps> = ({ onSettingsClick, isMonitoring, onToggleMonitoring }) => {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const { t, i18n } = useTranslation();
 
   // プラットフォーム別のキー表示
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -23,39 +25,39 @@ const Header: React.FC<HeaderProps> = ({ onSettingsClick, isMonitoring, onToggle
 
   const shortcuts: Record<string, ShortcutInfo> = {
     toggleWindow: {
-      description: 'ウィンドウの表示/非表示',
+      description: t('shortcut.toggleWindow'),
       keys: [cmdKey, 'B']
     },
     screenshot: {
-      description: 'スクリーンショットを撮る',
+      description: t('shortcut.screenshot'),
       keys: [cmdKey, 'H']
     },
     getSolution: {
-      description: '解決策を取得',
+      description: t('shortcut.getSolution'),
       keys: [cmdKey, '↵']
     },
     toggleMonitoring: {
-      description: '画面監視の切り替え',
+      description: t('shortcut.toggleMonitoring'),
       keys: [cmdKey, 'M']
     },
     moveUp: {
-      description: '上に移動',
+      description: t('shortcut.moveUp'),
       keys: [cmdKey, '↑']
     },
     moveDown: {
-      description: '下に移動',
+      description: t('shortcut.moveDown'),
       keys: [cmdKey, '↓']
     },
     moveLeft: {
-      description: '左に移動',
+      description: t('shortcut.moveLeft'),
       keys: [cmdKey, '←']
     },
     moveRight: {
-      description: '右に移動',
+      description: t('shortcut.moveRight'),
       keys: [cmdKey, '→']
     },
     quit: {
-      description: 'アプリを終了',
+      description: t('shortcut.quit'),
       keys: [cmdKey, 'Q']
     }
   };
@@ -80,8 +82,20 @@ const Header: React.FC<HeaderProps> = ({ onSettingsClick, isMonitoring, onToggle
     <header className="relative flex items-center justify-between px-4 pt-4 pb-2">
       {/* ロゴ部分 */}
       <div className="flex items-center gap-2">
-        <h1 className="text-sm font-bold text-gray-800">OpenClue Kai</h1>
-        <span className="text-xs text-gray-600">v1.0.0</span>
+        <h1 className="text-sm font-bold text-gray-800">{t('appName')}</h1>
+        <span className="text-xs text-gray-600">{t('version')}</span>
+      </div>
+
+      {/* 言語切替UI */}
+      <div className="flex items-center gap-2">
+        <button
+          className={`px-2 py-1 rounded text-xs font-bold ${i18n.language === 'ja' ? 'bg-blue-200' : 'bg-gray-100'}`}
+          onClick={() => i18n.changeLanguage('ja')}
+        >日本語</button>
+        <button
+          className={`px-2 py-1 rounded text-xs font-bold ${i18n.language === 'en' ? 'bg-blue-200' : 'bg-gray-100'}`}
+          onClick={() => i18n.changeLanguage('en')}
+        >English</button>
       </div>
 
       {/* コントロールボタン */}
@@ -96,7 +110,7 @@ const Header: React.FC<HeaderProps> = ({ onSettingsClick, isMonitoring, onToggle
               ? 'bg-green-500/20 hover:bg-green-500/30 text-green-700' 
               : 'bg-gray-500/20 hover:bg-gray-500/30 text-gray-700'
           }`}
-          title={isMonitoring ? '監視を停止' : '監視を開始'}
+          title={isMonitoring ? t('monitoringOn') : t('monitoringOff')}
         >
           {isMonitoring ? <FaEye className="w-4 h-4" /> : <FaEyeSlash className="w-4 h-4" />}
         </motion.button>
@@ -107,7 +121,7 @@ const Header: React.FC<HeaderProps> = ({ onSettingsClick, isMonitoring, onToggle
           whileTap={{ scale: 0.95 }}
           onClick={onSettingsClick}
           className="p-2 rounded-lg bg-gray-500/20 hover:bg-gray-500/30 text-gray-700 transition-colors"
-          title="設定"
+          title={t('settings')}
         >
           <FaCog className="w-4 h-4" />
         </motion.button>
@@ -118,7 +132,7 @@ const Header: React.FC<HeaderProps> = ({ onSettingsClick, isMonitoring, onToggle
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowShortcuts(!showShortcuts)}
           className="p-2 rounded-lg bg-gray-500/20 hover:bg-gray-500/30 text-gray-700 transition-colors"
-          title="ショートカット一覧"
+          title={t('shortcuts')}
         >
           <FaQuestion className="w-4 h-4" />
         </motion.button>
@@ -129,7 +143,7 @@ const Header: React.FC<HeaderProps> = ({ onSettingsClick, isMonitoring, onToggle
           whileTap={{ scale: 0.95 }}
           onClick={() => window.electron?.minimize()}
           className="p-2 rounded-lg bg-gray-500/20 hover:bg-gray-500/30 text-gray-700 transition-colors"
-          title="最小化"
+          title={t('minimize')}
         >
           <FaWindowMinimize className="w-4 h-4" />
         </motion.button>
@@ -140,7 +154,7 @@ const Header: React.FC<HeaderProps> = ({ onSettingsClick, isMonitoring, onToggle
           whileTap={{ scale: 0.95 }}
           onClick={() => window.electron?.close()}
           className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-700 transition-colors"
-          title="閉じる"
+          title={t('close')}
         >
           <FaTimes className="w-4 h-4" />
         </motion.button>
@@ -158,7 +172,7 @@ const Header: React.FC<HeaderProps> = ({ onSettingsClick, isMonitoring, onToggle
             className="absolute top-full right-0 mt-2 w-80 z-50"
           >
             <div className="bg-white/95 backdrop-blur-md rounded-lg shadow-lg border border-gray-200 p-4">
-              <h3 className="font-semibold text-gray-800 mb-3">ショートカット一覧</h3>
+              <h3 className="font-semibold text-gray-800 mb-3">{t('shortcutsTitle')}</h3>
               <div className="space-y-2 text-sm">
                 {Object.entries(shortcuts).map(([key, info]) => (
                   <div key={key} className="flex items-center justify-between py-1">

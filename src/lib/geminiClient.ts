@@ -10,6 +10,7 @@ export interface GeminiRequestOptions {
   imageBase64?: string; // data:image/png;base64,...
   history?: string[];   // 直近の履歴や文脈
   outputFormat?: 'text' | 'json';
+  language?: 'ja' | 'en'; // 追加: 出力言語指定
 }
 
 export async function callGeminiAPI(options: GeminiRequestOptions): Promise<string | object> {
@@ -20,6 +21,7 @@ export async function callGeminiAPI(options: GeminiRequestOptions): Promise<stri
     imageBase64,
     history = [],
     outputFormat = 'text',
+    language,
   } = options;
 
   // プロンプト生成
@@ -29,6 +31,12 @@ export async function callGeminiAPI(options: GeminiRequestOptions): Promise<stri
   }
   if (outputFormat === 'json') {
     fullPrompt += '\n回答は必ずJSON形式で返してください。';
+  }
+  // 言語指示を付与
+  if (language === 'en') {
+    fullPrompt = `Please answer in English.\n` + fullPrompt;
+  } else if (language === 'ja') {
+    fullPrompt = `必ず日本語で答えてください。\n` + fullPrompt;
   }
 
   // parts生成
