@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { callGeminiAPI } from '../lib/geminiClient';
+import { extractOcrText } from '../lib/ocrClient';
 
 interface ScreenMonitorConfig {
   interval: number; // 監視間隔（ミリ秒）
@@ -214,27 +215,27 @@ export const useScreenMonitor = (props: ScreenMonitorProps) => {
   const monitorScreen = useCallback(async () => {
     try {
       const currentScreenshot = await takeScreenshotAsBase64();
-      
       if (lastScreenshot) {
         const changePercentage = await calculateImageDifference(lastScreenshot, currentScreenshot);
-        
         if (changePercentage > config.changeThreshold) {
           const blob = await window.electron.takeScreenshot();
-          const context = `画面が${(changePercentage * 100).toFixed(1)}%変化しました`;
-          
+          // OCRテキストを抽出
+          const ocrText = await extractOcrText(blob);
+          // contextにOCRテキストを追加
+          let context = `画面が${(changePercentage * 100).toFixed(1)}%変化しました`;
+          if (ocrText && ocrText.length > 0) {
+            context += `\n[画面OCRテキスト]\n${ocrText}`;
+          }
           const newChange: ScreenChange = {
             timestamp: Date.now(),
             screenshot: blob,
             changePercentage,
             context,
           };
-
           setScreenHistory(prev => [...prev.slice(-9), newChange]); // 最新10件を保持
-
           // 文脈に基づいたアドバイスを生成
           const advice = await generateContextualAdvice(blob, context, screenHistory);
           setCurrentAdvice(advice);
-
           // 構造化アドバイスも自動生成
           if (props.onStructuredAdvice) {
             const structured = await generateStructuredAdvice(blob, context, screenHistory);
@@ -242,7 +243,6 @@ export const useScreenMonitor = (props: ScreenMonitorProps) => {
           }
         }
       }
-      
       setLastScreenshot(currentScreenshot);
     } catch (error) {
       console.error('Screen monitoring error:', error);
