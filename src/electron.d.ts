@@ -41,6 +41,14 @@ export interface IElectronAPI {
       height: number;
     };
   } | null>;
+
+  // アクティブウィンドウ情報を取得
+  getActiveWindow: () => Promise<{
+    title: string;
+    app: string;
+    processId: number;
+    url?: string | null;
+  } | null>;
 }
 
 declare global {

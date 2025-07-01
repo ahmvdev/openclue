@@ -7,6 +7,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { useScreenMonitor } from './hooks/useScreenMonitor';
 import { toast, Toaster } from 'react-hot-toast';
+import { callGeminiAPI } from './lib/geminiClient';
+
+// 型定義拡張
+interface TodoItem {
+  text: string;
+  checked: boolean;
+}
+interface StructuredAdvice {
+  todo?: TodoItem[];
+  summary?: string;
+  raw?: string;
+  timestamp?: number;
+}
 
 function App() {
   const [isFocused, setIsFocused] = useState(false);
@@ -68,6 +81,94 @@ function App() {
     };
   }, [text]);
 
+  // 構造化アドバイス用の状態
+  const [structuredAdvice, setStructuredAdvice] = useState<StructuredAdvice | null>(null);
+  const [structuring, setStructuring] = useState(false);
+  const [structuredAdviceHistory, setStructuredAdviceHistory] = useState<StructuredAdvice[]>([]);
+
+  // --- 履歴の永続化: 初期化・復元 ---
+  useEffect(() => {
+    const loadAdviceHistory = async () => {
+      try {
+        const saved = await window.electron?.store.get('adviceHistory');
+        if (Array.isArray(saved)) {
+          // 旧型式（string[]）→新型式（TodoItem[]）に変換
+          const converted = saved.map((item: any) => ({
+            ...item,
+            todo: Array.isArray(item.todo)
+              ? item.todo.map((t: any) => typeof t === 'string' ? { text: t, checked: false } : t)
+              : undefined,
+          }));
+          setStructuredAdviceHistory(converted);
+        }
+      } catch (e) {}
+    };
+    loadAdviceHistory();
+  }, []);
+
+  // --- 履歴の永続化: 保存 ---
+  useEffect(() => {
+    if (structuredAdviceHistory.length > 0) {
+      window.electron?.store.set('adviceHistory', structuredAdviceHistory);
+    }
+  }, [structuredAdviceHistory]);
+
+  // structuredAdviceが更新されたら履歴に追加
+  useEffect(() => {
+    if (structuredAdvice && (structuredAdvice.summary || (structuredAdvice.todo && structuredAdvice.todo.length > 0))) {
+      setStructuredAdviceHistory(prev => {
+        // todo: string[] → TodoItem[]
+        const todo = structuredAdvice.todo
+          ? structuredAdvice.todo.map((t: any) => typeof t === 'string' ? { text: t, checked: false } : t)
+          : undefined;
+        const newItem: StructuredAdvice = { ...structuredAdvice, todo, timestamp: Date.now() };
+        const arr = [...prev, newItem];
+        return arr.slice(-10);
+      });
+    }
+  }, [structuredAdvice]);
+
+  // --- チェック状態の切り替え ---
+  const handleToggleTodo = (historyIdx: number, todoIdx: number) => {
+    setStructuredAdviceHistory(prev => {
+      const arr = prev.map((item, idx) => {
+        if (idx !== historyIdx) return item;
+        if (!item.todo) return item;
+        const newTodo = item.todo.map((t, i) => i === todoIdx ? { ...t, checked: !t.checked } : t);
+        return { ...item, todo: newTodo };
+      });
+      // 永続化
+      window.electron?.store.set('adviceHistory', arr);
+      return arr;
+    });
+  };
+
+  // --- 最新アドバイスのTODOチェック ---
+  const handleToggleCurrentTodo = (todoIdx: number) => {
+    setStructuredAdvice((prev) => {
+      if (!prev || !prev.todo) return prev;
+      const newTodo = prev.todo.map((t, i) => i === todoIdx ? { ...t, checked: !t.checked } : t);
+      return { ...prev, todo: newTodo };
+    });
+  };
+
+  // --- 履歴クリア機能の永続化 ---
+  const handleClearAdviceHistory = async () => {
+    setStructuredAdviceHistory([]);
+    await window.electron?.store.delete('adviceHistory');
+    toast.success('アドバイス履歴をクリアしました');
+  };
+
+  // 履歴から選択したアドバイスを再表示
+  const handleSelectHistory = (item: StructuredAdvice) => {
+    setStructuredAdvice(item);
+  };
+
+  // 画面変化時の自動構造化アドバイス反映用コールバック
+  const handleAutoStructuredAdvice = (advice: { todo?: string[]; summary?: string; raw?: string }) => {
+    setStructuredAdvice(advice);
+  };
+
   // 画面監視フックを使用
   const {
     isMonitoring,
@@ -75,9 +176,12 @@ function App() {
     startMonitoring,
     stopMonitoring,
     clearAdvice,
+    generateStructuredAdvice,
+    screenHistory,
   } = useScreenMonitor({
     ...monitorConfig,
-    geminiApiKey
+    geminiApiKey,
+    onStructuredAdvice: handleAutoStructuredAdvice,
   });
 
   function blobToBase64(blob: Blob): Promise<string> {
@@ -92,44 +196,18 @@ function App() {
     if (!geminiApiKey) {
       return 'Gemini API Keyが設定されていません。設定画面からAPI Keyを設定してください。';
     }
-
     try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    inlineData: {
-                      mimeType: 'image/png',
-                      data: base64Image.replace(/^data:image\/png;base64,/, ''),
-                    },
-                  },
-                  {
-                    text: prompt,
-                  },
-                ],
-              },
-            ],
-          }),
-        }
-      );
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        console.error('Gemini API error:', errorData);
-        return `Gemini APIエラー: ${errorData.error?.message || 'Unknown error'}`;
-      }
-
-      const json = await res.json();
-      return json.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
-    } catch (error) {
+      // 今後: モデルや履歴、構造化出力も柔軟に指定可能
+      const result = await callGeminiAPI({
+        apiKey: geminiApiKey,
+        model: 'gemini-2.5-flash', // 必要に応じて切り替え
+        prompt,
+        imageBase64: base64Image,
+        // history: [], // 必要に応じて履歴も渡せる
+        outputFormat: 'text',
+      });
+      return typeof result === 'string' ? result : JSON.stringify(result);
+    } catch (error: any) {
       console.error('Error calling Gemini API:', error);
       return 'Gemini APIの呼び出し中にエラーが発生しました。';
     }
@@ -229,6 +307,27 @@ function App() {
     }
   };
 
+  // 構造化アドバイス生成ハンドラ
+  const handleStructuredAdvice = async () => {
+    setStructuring(true);
+    setStructuredAdvice(null);
+    try {
+      // 最新の履歴から直近のスクリーンショット・文脈を取得
+      const last = screenHistory[screenHistory.length - 1];
+      if (!last) {
+        toast.error('履歴がありません');
+        setStructuring(false);
+        return;
+      }
+      const result = await generateStructuredAdvice(last.screenshot, last.context, screenHistory);
+      setStructuredAdvice(result);
+    } catch (e) {
+      toast.error('構造化アドバイス生成に失敗しました');
+    } finally {
+      setStructuring(false);
+    }
+  };
+
   return (
     <main className="drag h-screen flex flex-col font-sfpro bg-gradient-to-br from-[#e8debe]/90 via-[#ffffff]/90 to-[#d4e4fc]/90 backdrop-blur-md text-gray-800 rounded-[15px] shadow-lg">
       <Header 
@@ -295,6 +394,95 @@ function App() {
           onToggleMonitoring={toggleMonitoring}
         />
 
+        {/* 構造化アドバイス生成ボタンと表示 */}
+        <div className="px-4 mt-4">
+          <button
+            onClick={handleStructuredAdvice}
+            disabled={structuring || screenHistory.length === 0}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-400"
+          >
+            {structuring ? '生成中...' : 'TODOリスト・要点を生成'}
+          </button>
+          {/* 構造化アドバイス表示（最新） */}
+          {structuredAdvice && (
+            <div className="mt-3 bg-white/70 rounded-lg p-4 shadow-sm">
+              {structuredAdvice.summary && (
+                <div className="mb-2 text-sm text-gray-700">
+                  <span className="font-bold">要点:</span> {structuredAdvice.summary}
+                </div>
+              )}
+              {structuredAdvice.todo && structuredAdvice.todo.length > 0 && (
+                <div className="text-sm text-gray-700">
+                  <span className="font-bold">TODOリスト:</span>
+                  <ul className="list-disc ml-6 mt-1">
+                    {structuredAdvice.todo.map((item, idx) => (
+                      <li key={idx} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={item.checked}
+                          onChange={() => handleToggleCurrentTodo(idx)}
+                          className="accent-blue-500 w-4 h-4"
+                        />
+                        <span className={item.checked ? 'line-through text-gray-400' : ''}>{item.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {!structuredAdvice.summary && (!structuredAdvice.todo || structuredAdvice.todo.length === 0) && (
+                <div className="text-xs text-gray-500">{structuredAdvice.raw}</div>
+              )}
+            </div>
+          )}
+
+          {/* アドバイス履歴一覧 */}
+          {structuredAdviceHistory.length > 0 && (
+            <div className="mt-6">
+              <div className="font-bold text-xs text-gray-500 mb-1 flex items-center gap-2">
+                <span>アドバイス履歴（最新10件）</span>
+                <button
+                  className="ml-auto text-xs text-red-400 hover:text-red-600 underline"
+                  onClick={handleClearAdviceHistory}
+                  type="button"
+                >
+                  履歴クリア
+                </button>
+              </div>
+              <ul className="divide-y divide-gray-200 bg-white/60 rounded-lg shadow-sm">
+                {structuredAdviceHistory.slice().reverse().map((item, idx) => (
+                  <li
+                    key={item.timestamp}
+                    className="px-3 py-2 cursor-pointer hover:bg-blue-50 transition-colors"
+                    onClick={() => handleSelectHistory(item)}
+                  >
+                    <div className="text-xs text-gray-700 flex items-center gap-2">
+                      <span>{item.summary ? item.summary.slice(0, 30) : '（要点なし）'}</span>
+                      <span className="ml-auto text-gray-400">{item.timestamp ? new Date(item.timestamp).toLocaleTimeString() : ''}</span>
+                    </div>
+                    {item.todo && item.todo.length > 0 && (
+                      <div className="text-[11px] text-gray-500 mt-1 truncate flex flex-wrap gap-2">
+                        {item.todo.slice(0, 3).map((todo, tIdx) => (
+                          <label key={tIdx} className="inline-flex items-center gap-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={todo.checked}
+                              onChange={e => { e.stopPropagation(); handleToggleTodo(structuredAdviceHistory.length - 1 - idx, tIdx); }}
+                              className="accent-blue-500 w-3 h-3"
+                              onClick={e => e.stopPropagation()}
+                            />
+                            <span className={todo.checked ? 'line-through text-gray-400' : ''}>{todo.text}</span>
+                          </label>
+                        ))}
+                        {item.todo.length > 3 ? <span>...</span> : null}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+        
         <div className="px-4">
           {loading && (
             <motion.div

@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, desktopCapturer, globalShortcut, shell, sc
 import serve from "electron-serve";
 import path, { join } from "path";
 import fs from "fs";
+import activeWin from 'active-win';
 
 import { getURL } from "./lib/getUrl";
 import isDev from "./lib/isDev";
@@ -326,4 +327,20 @@ ipcMain.handle("get-window-state", () => {
     };
   }
   return null;
+});
+
+// アクティブウィンドウ情報を取得
+ipcMain.handle('get-active-window', async () => {
+  try {
+    const win = await activeWin();
+    if (!win) return null;
+    return {
+      title: win.title,
+      app: win.owner.name,
+      processId: win.owner.processId,
+      url: win.url || null,
+    };
+  } catch (e) {
+    return null;
+  }
 });

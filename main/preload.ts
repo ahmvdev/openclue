@@ -43,6 +43,11 @@ export const api = {
   
   // ウィンドウ状態を取得
   getWindowState: () => ipcRenderer.invoke('get-window-state'),
+
+  // アクティブウィンドウ情報を取得
+  getActiveWindow: async (): Promise<{ title: string; app: string; processId: number; url?: string | null } | null> => {
+    return await ipcRenderer.invoke('get-active-window');
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', api);

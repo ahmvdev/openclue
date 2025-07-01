@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { callGeminiAPI } from '../lib/geminiClient';
 
 interface ScreenMonitorConfig {
   interval: number; // 監視間隔（ミリ秒）
@@ -9,6 +10,7 @@ interface ScreenMonitorConfig {
 // 型定義を拡張して、API Keyを受け取れるようにする
 interface ScreenMonitorProps extends ScreenMonitorConfig {
   geminiApiKey?: string;
+  onStructuredAdvice?: (advice: { todo?: string[]; summary?: string; raw?: string }) => void;
 }
 
 interface ScreenChange {
@@ -24,6 +26,7 @@ export const useScreenMonitor = (props: ScreenMonitorProps) => {
   const [lastScreenshot, setLastScreenshot] = useState<string | null>(null);
   const [screenHistory, setScreenHistory] = useState<ScreenChange[]>([]);
   const [currentAdvice, setCurrentAdvice] = useState<string>('');
+  const [actionHistory, setActionHistory] = useState<{ timestamp: number; app: string; title: string }[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -106,6 +109,21 @@ export const useScreenMonitor = (props: ScreenMonitorProps) => {
     });
   }, []);
 
+  // アクティブウィンドウ履歴の取得
+  useEffect(() => {
+    if (!isMonitoring) return;
+    const interval = setInterval(async () => {
+      const win = await window.electron.getActiveWindow?.();
+      if (win && win.app && win.title) {
+        setActionHistory(prev => [
+          ...prev.slice(-9),
+          { timestamp: Date.now(), app: win.app, title: win.title }
+        ]);
+      }
+    }, Math.max(2000, config.interval)); // 2秒ごと、または監視間隔以上
+    return () => clearInterval(interval);
+  }, [isMonitoring, config.interval]);
+
   // 文脈に基づいたアドバイスを生成
   const generateContextualAdvice = useCallback(async (
     screenshot: Blob,
@@ -124,64 +142,73 @@ export const useScreenMonitor = (props: ScreenMonitorProps) => {
 
     const historyContext = history.slice(-3).map((change, index) => 
       `${index + 1}. ${new Date(change.timestamp).toLocaleTimeString()}: ${change.context}`
-    ).join('\n');
+    );
+    const actionContext = actionHistory.slice(-3).map((item, idx) =>
+      `A${idx + 1}. ${new Date(item.timestamp).toLocaleTimeString()}: [${item.app}] ${item.title}`
+    );
+    const mergedHistory = [...historyContext, ...actionContext];
 
-    const prompt = `画面を継続的に監視しています。以下の文脈で、現在の画面に対して簡潔で実用的なアドバイスを日本語で提供してください：
-
-最近の画面変化の履歴：
-${historyContext}
-
-現在の状況：${context}
-
-アドバイスは以下の観点から提供してください：
-- 生産性の向上
-- 作業効率の改善
-- 注意すべき点
-- 次に取るべきアクション
-
-回答は100文字以内で簡潔にお願いします。`;
+    const prompt = `画面を継続的に監視しています。以下の文脈で、現在の画面に対して簡潔で実用的なアドバイスを日本語で提供してください：\n\n最近の画面変化の履歴・状況・操作履歴を考慮してください。\n\n現在の状況：${context}\n\nアドバイスは以下の観点から提供してください：\n- 生産性の向上\n- 作業効率の改善\n- 注意すべき点\n- 次に取るべきアクション\n\n回答は100文字以内で簡潔にお願いします。`;
 
     try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    inlineData: {
-                      mimeType: 'image/png',
-                      data: base64.replace(/^data:image\/png;base64,/, ''),
-                    },
-                  },
-                  {
-                    text: prompt,
-                  },
-                ],
-              },
-            ],
-          }),
-        }
-      );
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        console.error('Gemini API error:', errorData);
-        return `Gemini APIエラー: ${errorData.error?.message || 'Unknown error'}`;
-      }
-
-      const json = await res.json();
-      return json.candidates?.[0]?.content?.parts?.[0]?.text || 'アドバイスを生成できませんでした';
-    } catch (error) {
+      const result = await callGeminiAPI({
+        apiKey: geminiApiKey,
+        model: 'gemini-2.5-flash',
+        prompt,
+        imageBase64: base64,
+        history: mergedHistory,
+        outputFormat: 'text',
+      });
+      return typeof result === 'string' ? result : JSON.stringify(result);
+    } catch (error: any) {
       console.error('Error generating advice:', error);
       return 'アドバイス生成中にエラーが発生しました';
     }
-  }, [geminiApiKey]);
+  }, [geminiApiKey, actionHistory]);
+
+  // 構造化アドバイス（TODOリスト・要点）を生成
+  const generateStructuredAdvice = useCallback(async (
+    screenshot: Blob,
+    context: string,
+    history: ScreenChange[]
+  ): Promise<{ todo?: string[]; summary?: string; raw?: string }> => {
+    if (!geminiApiKey) {
+      return { raw: 'Gemini API Keyが設定されていません。設定画面からAPI Keyを設定してください。' };
+    }
+    const base64 = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(screenshot);
+    });
+    const historyContext = history.slice(-3).map((change, index) => 
+      `${index + 1}. ${new Date(change.timestamp).toLocaleTimeString()}: ${change.context}`
+    );
+    const actionContext = actionHistory.slice(-3).map((item, idx) =>
+      `A${idx + 1}. ${new Date(item.timestamp).toLocaleTimeString()}: [${item.app}] ${item.title}`
+    );
+    const mergedHistory = [...historyContext, ...actionContext];
+
+    const prompt = `画面を継続的に監視しています。以下の文脈で、現在の画面に対してTODOリストと要点(summary)を日本語でJSON形式で返してください。\n\n最近の画面変化の履歴・状況・操作履歴を考慮してください。\n\n現在の状況：${context}\n\n出力例：\n{\n  \"todo\": [\"やるべきこと1\", \"やるべきこと2\"],\n  \"summary\": \"要点のまとめ\"\n}`;
+
+    try {
+      const result = await callGeminiAPI({
+        apiKey: geminiApiKey,
+        model: 'gemini-2.5-flash',
+        prompt,
+        imageBase64: base64,
+        history: mergedHistory,
+        outputFormat: 'json',
+      });
+      if (typeof result === 'object') {
+        return { ...result, raw: JSON.stringify(result) };
+      } else {
+        return { raw: result };
+      }
+    } catch (error: any) {
+      console.error('Error generating structured advice:', error);
+      return { raw: '構造化アドバイス生成中にエラーが発生しました' };
+    }
+  }, [geminiApiKey, actionHistory]);
 
   // 画面を監視する関数
   const monitorScreen = useCallback(async () => {
@@ -207,6 +234,12 @@ ${historyContext}
           // 文脈に基づいたアドバイスを生成
           const advice = await generateContextualAdvice(blob, context, screenHistory);
           setCurrentAdvice(advice);
+
+          // 構造化アドバイスも自動生成
+          if (props.onStructuredAdvice) {
+            const structured = await generateStructuredAdvice(blob, context, screenHistory);
+            props.onStructuredAdvice(structured);
+          }
         }
       }
       
@@ -214,7 +247,7 @@ ${historyContext}
     } catch (error) {
       console.error('Screen monitoring error:', error);
     }
-  }, [lastScreenshot, config.changeThreshold, calculateImageDifference, takeScreenshotAsBase64, generateContextualAdvice, screenHistory]);
+  }, [lastScreenshot, config.changeThreshold, calculateImageDifference, takeScreenshotAsBase64, generateContextualAdvice, generateStructuredAdvice, screenHistory, props.onStructuredAdvice]);
 
   // 監視を開始
   const startMonitoring = useCallback(() => {
@@ -265,5 +298,6 @@ ${historyContext}
     stopMonitoring,
     clearHistory: () => setScreenHistory([]),
     clearAdvice: () => setCurrentAdvice(''),
+    generateStructuredAdvice,
   };
 };
