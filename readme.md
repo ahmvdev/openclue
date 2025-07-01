@@ -1,80 +1,122 @@
-# OpenClue Kai (改良版)
+# OpenClue Kai - AI画面アシスタント
 
-This is an enhanced open-source version of the app Cluely, with continuous screen monitoring and contextual advice features.
+OpenClue Kaiは、Cluelyのオープンソース版として開発されたAI搭載の画面アシスタントです。画面のスクリーンショットを撮影し、AIが内容を分析して適切なアドバイスや解決策を提供します。
 
-## 🆕 New Features
+## 🌟 主な機能
 
-### 継続的画面監視
-- **リアルタイム監視**: 画面の変化を自動的に検知
-- **文脈に沿ったアドバイス**: 画面の変化に基づいて自動的にアドバイスを生成
-- **カスタマイズ可能な設定**: 監視間隔と変化検知の感度を調整可能
+### コア機能
+- **AIによる画面分析**: Google Gemini APIを使用して画面内容を理解
+- **スクリーンショット機能**: ワンクリックで画面を撮影
+- **リアルタイム画面監視**: 画面の変化を自動検知してアドバイスを生成
+- **スマートアドバイス**: 生産性向上のための具体的な提案
 
-### スマートアドバイス
-- **生産性向上**: 作業効率を改善するための提案
-- **注意喚起**: 重要な変化や見逃しやすい点を指摘
-- **次のアクション**: 取るべき行動を具体的に提案
+### 改善された機能
+- **統一されたショートカットキー**: Mac/Windows両対応のキーボードショートカット
+- **システムトレイ対応**: 常駐アプリケーションとして動作
+- **ウィンドウ位置記憶**: 最後の位置を記憶して復元
+- **改善されたUI/UX**: モダンでレスポンシブなデザイン
+- **エラーハンドリング**: 丁寧なエラーメッセージと通知
 
-## Features/Usage
+## 📦 インストール
 
-### 基本機能
-- Ask whats on the screen and it will tell you and provide more information
-- The app takes a screenshot and sends the photo to the LLM requiring minimal effort
+### 必要な環境
+- Node.js 18.0以上
+- npm または yarn
+- Google Gemini API Key ([こちらから取得](https://makersuite.google.com/app/apikey))
 
-### 新機能
-- **画面監視**: 設定ボタン（⚙️）から監視を有効にできます
-- **リアルタイムアドバイス**: 画面が変化すると自動的にアドバイスが表示されます
-- **監視設定**: 監視間隔（1-30秒）と変化検知感度を調整可能
+### セットアップ手順
 
+1. リポジトリをクローン:
+```bash
+git clone https://github.com/yourusername/openclue-kai.git
+cd openclue-kai
+```
 
-## Shortcuts
-
-- **Maximize or minimize:** CTRL + SHIFT + K 
-- **Close the app completely:** CTRL + SHIFT + D
-- **Toggle monitoring:** Click the eye icon (👁️) in the header
-- **Open settings:** Click the settings icon (⚙️) in the header
-
-## Screenshots of usecases:
-![1](https://github.com/user-attachments/assets/c8b1b296-e932-4d90-a3eb-f464d960be6f)
-![2](https://github.com/user-attachments/assets/5f7f3f19-b6cb-4dd4-bb35-433f8b3fae0d)
-
-
-## Installation
-
-1. **Run it locally**
-
+2. 依存関係をインストール:
 ```bash
 npm install
 ```
-2. **Create a `.env` file in the root directory and paste your API KEY:**
 
-```bash
-VITE_GEMINI_API_KEY=EXAMPLE_KEY_HERE
-```
+3. 環境変数を設定:
+   - プロジェクトルートに `.env` ファイルを作成
+   - 以下の内容を追加:
+   ```
+   VITE_GEMINI_API_KEY=your_api_key_here
+   ```
 
-3. **Start development server**:
+### 開発モードで実行
 
 ```bash
 npm run electron:dev
 ```
 
+### ビルド
 
-
-### Build app
-
-1. **Build the app**
+Windows版:
 ```bash
-npm run dist
+npm run dist:win
 ```
 
-2. Open it in `dist/win-unpacked`
+Mac版:
+```bash
+npm run dist:mac
+```
 
-There you go!
+Linux版:
+```bash
+npm run dist:linux
+```
+
+## ⌨️ ショートカットキー
+
+| 機能 | Windows/Linux | Mac |
+|------|---------------|-----|
+| ウィンドウの表示/非表示 | `Ctrl + B` | `⌘ + B` |
+| スクリーンショット | `Ctrl + H` | `⌘ + H` |
+| 解決策を取得 | `Ctrl + Enter` | `⌘ + Enter` |
+| 画面監視の切り替え | `Ctrl + M` | `⌘ + M` |
+| ウィンドウを上に移動 | `Ctrl + ↑` | `⌘ + ↑` |
+| ウィンドウを下に移動 | `Ctrl + ↓` | `⌘ + ↓` |
+| ウィンドウを左に移動 | `Ctrl + ←` | `⌘ + ←` |
+| ウィンドウを右に移動 | `Ctrl + →` | `⌘ + →` |
+| アプリを終了 | `Ctrl + Q` | `⌘ + Q` |
+
+### 互換性ショートカット（レガシー）
+- `Ctrl + Shift + K`: ウィンドウの表示/非表示
+- `Ctrl + Shift + D`: アプリを終了
+
+## 🔧 設定
+
+### 画面監視設定
+- **監視間隔**: 1秒〜30秒で調整可能
+- **変化検知感度**: 画面変化の検知感度を調整
+- **Gemini API Key**: 設定画面から変更可能
+
+## 🏗️ 技術スタック
+
+- **フロントエンド**: React + TypeScript + Vite
+- **デスクトップ**: Electron
+- **UI**: Tailwind CSS + Framer Motion
+- **AI**: Google Gemini API
+- **ストレージ**: electron-store
+
+## 📝 ライセンス
+
+このプロジェクトはMITライセンスの下で公開されています。
+
+## 🤝 貢献
+
+プルリクエストは歓迎します！大きな変更を行う場合は、まずイシューを作成して変更内容について議論してください。
+
+## 🐛 既知の問題
+
+- 初回起動時にAPI Keyの設定が必要
+- 一部の環境でスクリーンショットが正しく撮影されない場合がある
+
+## 📞 サポート
+
+問題や質問がある場合は、GitHubのイシューセクションで報告してください。
 
 ---
 
-### Platform Support:
-I have only tested this on windows so far.
-
-Feedback appreciated. Thanks!
-
-
+**注意**: このプロジェクトはCluelyのオープンソース版として開発されていますが、元のCluelyプロジェクトとは独立しています。

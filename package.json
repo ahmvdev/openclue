@@ -1,10 +1,11 @@
 {
-    "name": "openclue",
+    "name": "openclue-kai",
+    "description": "An open-source version of Cluely - AI-powered screen assistant",
     "author": {
-        "name": "Ra1NuX",
-        "email": "ra1nux.01@gmail.com"
+        "name": "OpenClue Kai Contributors",
+        "email": "openclue@example.com"
     },
-    "version": "0.0.0",
+    "version": "1.0.0",
     "main": "app/index.js",
     "scripts": {
         "dev": "vite",
@@ -13,16 +14,17 @@
         "build:dev:electron": "node ./esbuild.config.mjs --watch",
         "build": "npm run build:renderer && npm run build:electron",
         "lint": "eslint .",
-        "test": "jest",
         "preview": "vite preview",
         "start": "electronmon ./app",
         "electron:vite:build": "concurrently \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:5173 && npm run build:dev:electron\"",
         "electron:dev": "concurrently \"npm run electron:vite:build\" \"npm run start\"",
-        "dist": "npm run build && electron-builder --config electron-builder.config.js -w"
+        "dist": "npm run build && electron-builder --config electron-builder.config.js",
+        "dist:win": "npm run build && electron-builder --config electron-builder.config.js -w",
+        "dist:mac": "npm run build && electron-builder --config electron-builder.config.js -m",
+        "dist:linux": "npm run build && electron-builder --config electron-builder.config.js -l"
     },
     "dependencies": {
         "@tailwindcss/typography": "^0.5.16",
-        "@types/bun": "^1.2.4",
         "electron-log": "^5.3.0",
         "electron-serve": "^2.1.1",
         "electron-store": "^10.1.0",
@@ -32,9 +34,9 @@
         "framer-motion": "^12.18.1",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
+        "react-hot-toast": "^2.4.1",
         "react-icons": "^5.4.0",
-        "react-markdown": "^10.1.0",
-        "tsc": "^2.0.4"
+        "react-markdown": "^10.1.0"
     },
     "devDependencies": {
         "@types/react": "^18.3.18",
@@ -58,28 +60,43 @@
     },
     "build": {
         "extends": null,
-        "appId": "com.example",
-        "productName": "example",
-        "copyright": "Copyright © 2021 ${author}",
+        "appId": "com.openclue.kai",
+        "productName": "OpenClue Kai",
+        "copyright": "Copyright © 2024 OpenClue Kai Contributors",
         "linux": {
             "target": [
-                "pacman"
+                "AppImage",
+                "deb"
             ],
-            "icon": "build/icon.png"
+            "category": "Utility",
+            "icon": "assets/icons/icon.png"
         },
         "win": {
-            "icon": "build/icon.png"
+            "target": [
+                "nsis",
+                "portable"
+            ],
+            "icon": "assets/icons/icon.ico"
+        },
+        "mac": {
+            "category": "public.app-category.utilities",
+            "target": [
+                "dmg",
+                "zip"
+            ],
+            "icon": "assets/icons/icon.icns"
         },
         "nsis": {
             "oneClick": false,
             "allowToChangeInstallationDirectory": true
         },
         "files": [
-            "dist/**/*"
+            "dist/**/*",
+            "app/**/*"
         ],
         "directories": {
             "buildResources": "assets",
-            "output": "dist_electron"
+            "output": "release"
         }
     }
 }
