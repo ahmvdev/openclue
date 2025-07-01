@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import Header from './components/Header';
+import MonitorSettings from './components/MonitorSettings';
+import AdvicePanel from './components/AdvicePanel';
+import SystemInfo from './components/SystemInfo';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
+import { useScreenMonitor } from './hooks/useScreenMonitor';
 
 
 
@@ -11,8 +15,25 @@ function App() {
   const [hasResized, setHasResized] = useState(false);
   const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  
+  // 監視設定の状態
+  const [monitorConfig, setMonitorConfig] = useState({
+    interval: 5000, // 5秒
+    enabled: false,
+    changeThreshold: 0.05, // 5%の変化で検知
+  });
 
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+
+  // 画面監視フックを使用
+  const {
+    isMonitoring,
+    currentAdvice,
+    startMonitoring,
+    stopMonitoring,
+    clearAdvice,
+  } = useScreenMonitor(monitorConfig);
 
   function blobToBase64(blob: Blob): Promise<string> {
     return new Promise((resolve) => {
@@ -59,7 +80,7 @@ function App() {
       setLoading(true);
       setResponse('');
       if (!hasResized) {
-        await window.electron?.increaseHeightFromBottom(300);
+        await window.electron?.increaseHeightFromBottom(400);
         setHasResized(true);
       }
 
@@ -73,12 +94,26 @@ function App() {
     }
   };
 
+  // 監視設定の更新関数
+  const updateMonitorConfig = (updates: Partial<typeof monitorConfig>) => {
+    setMonitorConfig(prev => ({ ...prev, ...updates }));
+  };
+
+  // 監視のトグル
+  const toggleMonitoring = () => {
+    updateMonitorConfig({ enabled: !monitorConfig.enabled });
+  };
+
   return (
     <main className="drag h-screen flex flex-col font-sfpro font-bold bg-gradient-to-br from-[#e8debe]/90 via-[#ffffff]/90 to-[#d4e4fc]/90 backdrop-blur-md text-white rounded-[15px]">
-      <Header />
+      <Header 
+        onSettingsClick={() => setShowSettings(!showSettings)}
+        isMonitoring={isMonitoring}
+        onToggleMonitoring={toggleMonitoring}
+      />
 
       <section className="no-drag flex justify-center items-start mt-4">
-        <div className="relative">
+        <div className="relative w-full max-w-md">
           <input
             placeholder="Type here"
             value={text}
@@ -86,7 +121,7 @@ function App() {
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             onKeyDown={handleKeyDown}
-            className="outline-none w-[300px] rounded-[5px] p-[15px] text-black bg-white/80"
+            className="outline-none w-full rounded-[5px] p-[15px] text-black bg-white/80"
           />
           {isFocused && (
             <motion.div
@@ -94,43 +129,71 @@ function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3 }}
-              className="absolute top-full left-0 mt-1 text-sm ml-[250px] text-black flex items-center gap-1"
+              className="absolute top-full right-0 mt-1 text-sm text-black flex items-center gap-1"
             >
               <span>↵</span>
               <span>Enter</span>
             </motion.div>
           )}
+          
+          {/* 設定パネル */}
+          <MonitorSettings
+            isEnabled={monitorConfig.enabled}
+            interval={monitorConfig.interval}
+            changeThreshold={monitorConfig.changeThreshold}
+            onEnabledChange={(enabled) => updateMonitorConfig({ enabled })}
+            onIntervalChange={(interval) => updateMonitorConfig({ interval })}
+            onThresholdChange={(threshold) => updateMonitorConfig({ changeThreshold: threshold })}
+            isVisible={showSettings}
+            onClose={() => setShowSettings(false)}
+          />
         </div>
       </section>
 
-      <section className="no-drag flex-1 overflow-y-auto mt-4 px-4 text-black select-text">
-        {loading && (
-          <p className="animate-pulse px-6 text-gray-600 font-medium">Thinking...</p>
-        )}
+      <section className="no-drag flex-1 overflow-y-auto mt-4 text-black select-text">
+        {/* アドバイスパネル */}
+        <AdvicePanel
+          advice={currentAdvice}
+          isMonitoring={isMonitoring}
+          onClear={clearAdvice}
+          onToggleMonitoring={toggleMonitoring}
+        />
 
-        {response && (
-          <div className="mt-4 px-4 pb-4 max-w-full">
-          <div className="prose px-4 overflow-x-hidden break-words [&_a]:break-words">
-            <ReactMarkdown
-             components={{
-          a: ({ href, children, ...props }) => (
-            <a
-              {...props}
-              href={href}
-              onClick={(e) => {
-                e.preventDefault();
-                if (href) window.electron.openExternal(href);
-              }}
-              className="text-blue-600 underline break-words"
-            >
-              {children}
-            </a>
-          ),
-        }}
-            >{response}</ReactMarkdown>
-          </div>
+        <div className="px-4">
+          {loading && (
+            <p className="animate-pulse px-6 text-gray-600 font-medium">Thinking...</p>
+          )}
+
+          {response && (
+            <div className="mt-4 px-4 pb-4 max-w-full">
+              <div className="prose px-4 overflow-x-hidden break-words [&_a]:break-words">
+                <ReactMarkdown
+                  components={{
+                    a: ({ href, children, ...props }) => (
+                      <a
+                        {...props}
+                        href={href}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (href) window.electron.openExternal(href);
+                        }}
+                        className="text-blue-600 underline break-words"
+                      >
+                        {children}
+                      </a>
+                    ),
+                  }}
+                >{response}</ReactMarkdown>
+              </div>
+            </div>
+          )}
         </div>
-        )}
+        
+        {/* システム情報 */}
+        <SystemInfo 
+          isVisible={showSettings} 
+          isMonitoring={isMonitoring}
+        />
       </section>
     </main>
   );

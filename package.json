@@ -8,16 +8,16 @@
     "main": "app/index.js",
     "scripts": {
         "dev": "vite",
-        "build:electron": "bun ./esbuild.config.mjs",
+        "build:electron": "node ./esbuild.config.mjs",
         "build:renderer": "vite build",
-        "build:dev:electron": "bun ./esbuild.config.mjs --watch",
+        "build:dev:electron": "node ./esbuild.config.mjs --watch",
         "build": "npm run build:renderer && npm run build:electron",
         "lint": "eslint .",
         "test": "jest",
         "preview": "vite preview",
         "start": "electronmon ./app",
-        "electron:vite:build": "concurrently \"cross-env BROWSER=none bun dev\" \"wait-on http://localhost:5173 && bun build:dev:electron\"",
-        "electron:dev": "concurrently \"bun electron:vite:build\" \"bun start\"",
+        "electron:vite:build": "concurrently \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:5173 && npm run build:dev:electron\"",
+        "electron:dev": "concurrently \"npm run electron:vite:build\" \"npm run start\"",
         "dist": "npm run build && electron-builder --config electron-builder.config.js -w"
     },
     "dependencies": {
@@ -27,6 +27,7 @@
         "electron-serve": "^2.1.1",
         "electron-updater": "^6.3.9",
         "electronmon": "^2.0.3",
+        "esbuild": "^0.25.5",
         "framer-motion": "^12.18.1",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
@@ -74,7 +75,7 @@
         },
         "files": [
             "dist/**/*"
-                ],
+        ],
         "directories": {
             "buildResources": "assets",
             "output": "dist_electron"
