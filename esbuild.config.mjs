@@ -18,6 +18,13 @@ build({
     // '@sentry/electron',
     // 'app-root-path',
     'node:path',
+    '@electron/rebuild',
+    'app-builder-lib',
+    'electron-builder',
+    '@mapbox/node-pre-gyp',
+    'mock-aws-s3',
+    'aws-sdk',
+    'nock',
   ],
   format: 'cjs',
   loader: {
