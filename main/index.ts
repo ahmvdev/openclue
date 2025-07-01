@@ -4,6 +4,7 @@ import path, { join } from "path";
 
 import { getURL } from "./lib/getUrl";
 import isDev from "./lib/isDev";
+import store from "./lib/store";
 
 if (!isDev) {
   serve({ directory: join(__dirname, "renderer"), hostname: "example" });
@@ -111,4 +112,14 @@ ipcMain.handle("take-screenshot", async () => {
   const screen = sources[0];
   const dataUrl = screen.thumbnail.toDataURL();
   return dataUrl;
+});
+
+// Store API handlers
+ipcMain.handle("store/get", (_event, key) => {
+  return store.get(key);
+});
+
+ipcMain.handle("store/set", (_event, key, value) => {
+  store.set(key, value);
+  return true;
 });

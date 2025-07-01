@@ -17,6 +17,11 @@ export const api = {
   },
   openExternal: (url: string) => shell.openExternal(url),
 
+  // Store API
+  store: {
+    get: (key: string) => ipcRenderer.invoke('store/get', key),
+    set: (key: string, value: any) => ipcRenderer.invoke('store/set', key, value),
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', api);
