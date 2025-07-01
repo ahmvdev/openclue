@@ -6,6 +6,11 @@ interface ScreenMonitorConfig {
   changeThreshold: number; // 変化検知の閾値（0-1）
 }
 
+// 型定義を拡張して、API Keyを受け取れるようにする
+interface ScreenMonitorProps extends ScreenMonitorConfig {
+  geminiApiKey?: string;
+}
+
 interface ScreenChange {
   timestamp: number;
   screenshot: Blob;
@@ -13,7 +18,8 @@ interface ScreenChange {
   context: string;
 }
 
-export const useScreenMonitor = (config: ScreenMonitorConfig) => {
+export const useScreenMonitor = (props: ScreenMonitorProps) => {
+  const { geminiApiKey, ...config } = props;
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [lastScreenshot, setLastScreenshot] = useState<string | null>(null);
   const [screenHistory, setScreenHistory] = useState<ScreenChange[]>([]);
@@ -106,9 +112,8 @@ export const useScreenMonitor = (config: ScreenMonitorConfig) => {
     context: string,
     history: ScreenChange[]
   ): Promise<string> => {
-    const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!GEMINI_API_KEY) {
-      return 'API key not configured';
+    if (!geminiApiKey) {
+      return 'Gemini API Keyが設定されていません。設定画面からAPI Keyを設定してください。';
     }
 
     const base64 = await new Promise<string>((resolve) => {
@@ -138,7 +143,7 @@ ${historyContext}
 
     try {
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
         {
           method: 'POST',
           headers: {
@@ -164,13 +169,19 @@ ${historyContext}
         }
       );
 
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error('Gemini API error:', errorData);
+        return `Gemini APIエラー: ${errorData.error?.message || 'Unknown error'}`;
+      }
+
       const json = await res.json();
       return json.candidates?.[0]?.content?.parts?.[0]?.text || 'アドバイスを生成できませんでした';
     } catch (error) {
       console.error('Error generating advice:', error);
       return 'アドバイス生成中にエラーが発生しました';
     }
-  }, []);
+  }, [geminiApiKey]);
 
   // 画面を監視する関数
   const monitorScreen = useCallback(async () => {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import MonitorSettings from './components/MonitorSettings';
 import AdvicePanel from './components/AdvicePanel';
@@ -16,6 +16,7 @@ function App() {
   const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [geminiApiKey, setGeminiApiKey] = useState('');
   
   // 監視設定の状態
   const [monitorConfig, setMonitorConfig] = useState({
@@ -24,7 +25,26 @@ function App() {
     changeThreshold: 0.05, // 5%の変化で検知
   });
 
-  const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+  // 設定を読み込む
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        // API Keyを読み込む
+        const storedApiKey = await window.electron?.store.get('geminiApiKey') || '';
+        setGeminiApiKey(storedApiKey);
+
+        // 監視設定を読み込む
+        const storedConfig = await window.electron?.store.get('monitorConfig');
+        if (storedConfig) {
+          setMonitorConfig(storedConfig);
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+      }
+    };
+
+    loadSettings();
+  }, []);
 
   // 画面監視フックを使用
   const {
@@ -33,7 +53,10 @@ function App() {
     startMonitoring,
     stopMonitoring,
     clearAdvice,
-  } = useScreenMonitor(monitorConfig);
+  } = useScreenMonitor({
+    ...monitorConfig,
+    geminiApiKey
+  });
 
   function blobToBase64(blob: Blob): Promise<string> {
     return new Promise((resolve) => {
@@ -44,35 +67,50 @@ function App() {
   }
 
   async function sendToGemini(base64Image: string, prompt: string): Promise<string> {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  inlineData: {
-                    mimeType: 'image/png',
-                    data: base64Image.replace(/^data:image\/png;base64,/, ''),
-                  },
-                },
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    );
+    if (!geminiApiKey) {
+      return 'Gemini API Keyが設定されていません。設定画面からAPI Keyを設定してください。';
+    }
 
-    const json = await res.json();
-    return json.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    inlineData: {
+                      mimeType: 'image/png',
+                      data: base64Image.replace(/^data:image\/png;base64,/, ''),
+                    },
+                  },
+                  {
+                    text: prompt,
+                  },
+                ],
+              },
+            ],
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error('Gemini API error:', errorData);
+        return `Gemini APIエラー: ${errorData.error?.message || 'Unknown error'}`;
+      }
+
+      const json = await res.json();
+      return json.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
+    } catch (error) {
+      console.error('Error calling Gemini API:', error);
+      return 'Gemini APIの呼び出し中にエラーが発生しました。';
+    }
   }
 
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -95,8 +133,28 @@ function App() {
   };
 
   // 監視設定の更新関数
-  const updateMonitorConfig = (updates: Partial<typeof monitorConfig>) => {
-    setMonitorConfig(prev => ({ ...prev, ...updates }));
+  const updateMonitorConfig = async (updates: Partial<typeof monitorConfig>) => {
+    const newConfig = { ...monitorConfig, ...updates };
+    setMonitorConfig(newConfig);
+    
+    // 設定を保存
+    try {
+      await window.electron?.store.set('monitorConfig', newConfig);
+    } catch (error) {
+      console.error('Failed to save monitor config:', error);
+    }
+  };
+  
+  // Gemini API Keyの更新関数
+  const updateGeminiApiKey = async (apiKey: string) => {
+    setGeminiApiKey(apiKey);
+    
+    // API Keyを保存
+    try {
+      await window.electron?.store.set('geminiApiKey', apiKey);
+    } catch (error) {
+      console.error('Failed to save Gemini API Key:', error);
+    }
   };
 
   // 監視のトグル
@@ -141,9 +199,11 @@ function App() {
             isEnabled={monitorConfig.enabled}
             interval={monitorConfig.interval}
             changeThreshold={monitorConfig.changeThreshold}
+            geminiApiKey={geminiApiKey}
             onEnabledChange={(enabled) => updateMonitorConfig({ enabled })}
             onIntervalChange={(interval) => updateMonitorConfig({ interval })}
             onThresholdChange={(threshold) => updateMonitorConfig({ changeThreshold: threshold })}
+            onGeminiApiKeyChange={updateGeminiApiKey}
             isVisible={showSettings}
             onClose={() => setShowSettings(false)}
           />

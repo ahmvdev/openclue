@@ -5,9 +5,11 @@ interface MonitorSettingsProps {
   isEnabled: boolean;
   interval: number;
   changeThreshold: number;
+  geminiApiKey?: string;
   onEnabledChange: (enabled: boolean) => void;
   onIntervalChange: (interval: number) => void;
   onThresholdChange: (threshold: number) => void;
+  onGeminiApiKeyChange: (apiKey: string) => void;
   isVisible: boolean;
   onClose: () => void;
 }
@@ -16,9 +18,11 @@ const MonitorSettings: React.FC<MonitorSettingsProps> = ({
   isEnabled,
   interval,
   changeThreshold,
+  geminiApiKey = '',
   onEnabledChange,
   onIntervalChange,
   onThresholdChange,
+  onGeminiApiKeyChange,
   isVisible,
   onClose,
 }) => {
@@ -101,6 +105,32 @@ const MonitorSettings: React.FC<MonitorSettingsProps> = ({
           </div>
         </div>
 
+        {/* Gemini API Key */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Gemini API Key
+          </label>
+          <input
+            type="text"
+            value={geminiApiKey}
+            onChange={(e) => onGeminiApiKeyChange(e.target.value)}
+            placeholder="Gemini API Keyを入力"
+            className="w-full p-2 border border-gray-300 rounded-md text-sm"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            <a 
+              href="#" 
+              onClick={(e) => {
+                e.preventDefault();
+                window.electron?.openExternal('https://aistudio.google.com/app/apikey');
+              }}
+              className="text-blue-500 hover:underline"
+            >
+              API Keyを取得する
+            </a>
+          </p>
+        </div>
+
         {/* 説明 */}
         <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded">
           <p className="mb-1">
@@ -108,6 +138,9 @@ const MonitorSettings: React.FC<MonitorSettingsProps> = ({
           </p>
           <p className="mb-1">
             <strong>変化検知感度:</strong> どの程度の変化でアドバイスを生成するか
+          </p>
+          <p className="mb-1">
+            <strong>Gemini API Key:</strong> 画面分析に使用するGemini APIのキー
           </p>
           <p>
             <strong>注意:</strong> 短い間隔や高感度設定はバッテリー消費が増加します
