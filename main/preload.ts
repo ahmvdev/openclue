@@ -48,6 +48,16 @@ export const api = {
   getActiveWindow: async (): Promise<{ title: string; app: string; processId: number; url?: string | null } | null> => {
     return await ipcRenderer.invoke('get-active-window');
   },
+
+  // User Memory API
+  memory: {
+    recordAction: (action: any) => ipcRenderer.invoke('memory/record-action', action),
+    saveMemory: (memory: any) => ipcRenderer.invoke('memory/save-memory', memory),
+    searchMemories: (query: string, limit?: number) => ipcRenderer.invoke('memory/search-memories', query, limit),
+    getSuggestions: (context: any) => ipcRenderer.invoke('memory/get-suggestions', context),
+    exportData: () => ipcRenderer.invoke('memory/export-data'),
+    importData: (data: any) => ipcRenderer.invoke('memory/import-data', data),
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', api);

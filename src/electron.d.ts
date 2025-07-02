@@ -1,3 +1,33 @@
+// ユーザー行動の履歴エントリ
+export interface UserActionEntry {
+  id: string;
+  timestamp: number;
+  actionType: 'screenshot' | 'advice_request' | 'app_switch' | 'file_access' | 'query';
+  applicationName?: string;
+  windowTitle?: string;
+  context?: string;
+  query?: string;
+  response?: string;
+  tags?: string[];
+  metadata?: Record<string, any>;
+}
+
+// 長期記憶エントリ
+export interface MemoryEntry {
+  id: string;
+  createdAt: number;
+  updatedAt: number;
+  type: 'note' | 'project' | 'preference' | 'pattern' | 'knowledge';
+  title: string;
+  content: string;
+  tags: string[];
+  relevanceScore: number;
+  accessCount: number;
+  lastAccessed: number;
+  associations: string[];
+  metadata?: Record<string, any>;
+}
+
 export interface IElectronAPI {
   // ウィンドウ操作
   getVersion: () => string;
@@ -49,6 +79,16 @@ export interface IElectronAPI {
     processId: number;
     url?: string | null;
   } | null>;
+
+  // User Memory API
+  memory: {
+    recordAction: (action: Omit<UserActionEntry, 'id' | 'timestamp'>) => Promise<boolean>;
+    saveMemory: (memory: Omit<MemoryEntry, 'id' | 'createdAt' | 'updatedAt' | 'accessCount' | 'lastAccessed'>) => Promise<boolean>;
+    searchMemories: (query: string, limit?: number) => Promise<MemoryEntry[]>;
+    getSuggestions: (context: { currentTime: Date; currentApp?: string; recentQuery?: string }) => Promise<string[]>;
+    exportData: () => Promise<any>;
+    importData: (data: any) => Promise<boolean>;
+  };
 }
 
 declare global {

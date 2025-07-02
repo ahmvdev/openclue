@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaEye, FaEyeSlash, FaCog, FaTimes, FaWindowMinimize, FaQuestion } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaCog, FaTimes, FaWindowMinimize, FaQuestion, FaBrain } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
@@ -7,6 +7,7 @@ interface HeaderProps {
   onSettingsClick: () => void;
   isMonitoring: boolean;
   onToggleMonitoring: () => void;
+  onMemoryClick?: () => void;
 }
 
 interface ShortcutInfo {
@@ -14,7 +15,7 @@ interface ShortcutInfo {
   keys: string[];
 }
 
-const Header: React.FC<HeaderProps> = ({ onSettingsClick, isMonitoring, onToggleMonitoring }) => {
+const Header: React.FC<HeaderProps> = ({ onSettingsClick, isMonitoring, onToggleMonitoring, onMemoryClick }) => {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const { t, i18n } = useTranslation();
@@ -125,6 +126,19 @@ const Header: React.FC<HeaderProps> = ({ onSettingsClick, isMonitoring, onToggle
         >
           <FaCog className="w-4 h-4" />
         </motion.button>
+
+        {/* メモリボタン */}
+        {onMemoryClick && (
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onMemoryClick}
+            className="p-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-700 transition-colors"
+            title={t('memory')}
+          >
+            <FaBrain className="w-4 h-4" />
+          </motion.button>
+        )}
 
         {/* ショートカットヘルプボタン */}
         <motion.button

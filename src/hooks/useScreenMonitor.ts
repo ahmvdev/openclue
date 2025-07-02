@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { callGeminiAPI } from '../lib/geminiClient';
 import { extractOcrText } from '../lib/ocrClient';
+import { useUserMemory } from './useUserMemory';
 
 interface ScreenMonitorConfig {
   interval: number; // 監視間隔（ミリ秒）
@@ -30,6 +31,16 @@ export const useScreenMonitor = (props: ScreenMonitorProps) => {
   const [actionHistory, setActionHistory] = useState<{ timestamp: number; app: string; title: string }[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  
+  // ユーザーメモリフックを使用
+  const {
+    recordScreenshot,
+    recordAdviceRequest,
+    recordAppSwitch,
+    suggestions,
+    searchMemories,
+    saveMemory,
+  } = useUserMemory();
 
   // 画像の差分を計算する関数
   const calculateImageDifference = useCallback(async (img1: string, img2: string): Promise<number> => {
@@ -120,10 +131,12 @@ export const useScreenMonitor = (props: ScreenMonitorProps) => {
           ...prev.slice(-9),
           { timestamp: Date.now(), app: win.app, title: win.title }
         ]);
+        // アプリ切り替えを記録
+        await recordAppSwitch(win.app, win.title);
       }
     }, Math.max(2000, config.interval)); // 2秒ごと、または監視間隔以上
     return () => clearInterval(interval);
-  }, [isMonitoring, config.interval]);
+  }, [isMonitoring, config.interval, recordAppSwitch]);
 
   // 文脈に基づいたアドバイスを生成
   const generateContextualAdvice = useCallback(async (
@@ -141,15 +154,24 @@ export const useScreenMonitor = (props: ScreenMonitorProps) => {
       reader.readAsDataURL(screenshot);
     });
 
+    // 関連する記憶を検索
+    const relatedMemories = await searchMemories(context, 3);
+    const memoryContext = relatedMemories.map((memory, idx) => 
+      `M${idx + 1}. ${memory.title}: ${memory.content.substring(0, 100)}...`
+    );
+
     const historyContext = history.slice(-3).map((change, index) => 
       `${index + 1}. ${new Date(change.timestamp).toLocaleTimeString()}: ${change.context}`
     );
     const actionContext = actionHistory.slice(-3).map((item, idx) =>
       `A${idx + 1}. ${new Date(item.timestamp).toLocaleTimeString()}: [${item.app}] ${item.title}`
     );
-    const mergedHistory = [...historyContext, ...actionContext];
+    const mergedHistory = [...historyContext, ...actionContext, ...memoryContext];
 
-    const prompt = `画面を継続的に監視しています。以下の文脈で、現在の画面に対して簡潔で実用的なアドバイスを日本語で提供してください：\n\n最近の画面変化の履歴・状況・操作履歴を考慮してください。\n\n現在の状況：${context}\n\nアドバイスは以下の観点から提供してください：\n- 生産性の向上\n- 作業効率の改善\n- 注意すべき点\n- 次に取るべきアクション\n\n回答は100文字以内で簡潔にお願いします。`;
+    // AIの提案も含める
+    const aiSuggestions = suggestions.length > 0 ? `\n\nAIの提案:\n${suggestions.join('\n')}` : '';
+
+    const prompt = `画面を継続的に監視しています。以下の文脈で、現在の画面に対して簡潔で実用的なアドバイスを日本語で提供してください：\n\n最近の画面変化の履歴・状況・操作履歴・関連する記憶を考慮してください。\n\n現在の状況：${context}${aiSuggestions}\n\nアドバイスは以下の観点から提供してください：\n- 生産性の向上\n- 作業効率の改善\n- 注意すべき点\n- 次に取るべきアクション\n\n回答は100文字以内で簡潔にお願いします。`;
 
     try {
       const result = await callGeminiAPI({
@@ -160,12 +182,17 @@ export const useScreenMonitor = (props: ScreenMonitorProps) => {
         history: mergedHistory,
         outputFormat: 'text',
       });
-      return typeof result === 'string' ? result : JSON.stringify(result);
+      const advice = typeof result === 'string' ? result : JSON.stringify(result);
+      
+      // アドバイスリクエストを記録
+      await recordAdviceRequest(prompt, advice, context);
+      
+      return advice;
     } catch (error: any) {
       console.error('Error generating advice:', error);
       return 'アドバイス生成中にエラーが発生しました';
     }
-  }, [geminiApiKey, actionHistory]);
+  }, [geminiApiKey, actionHistory, recordAdviceRequest, searchMemories, suggestions]);
 
   // 構造化アドバイス（TODOリスト・要点）を生成
   const generateStructuredAdvice = useCallback(async (
@@ -181,15 +208,22 @@ export const useScreenMonitor = (props: ScreenMonitorProps) => {
       reader.onloadend = () => resolve(reader.result as string);
       reader.readAsDataURL(screenshot);
     });
+
+    // 関連する記憶を検索
+    const relatedMemories = await searchMemories(context, 3);
+    const memoryContext = relatedMemories.map((memory, idx) => 
+      `M${idx + 1}. ${memory.title}: ${memory.content.substring(0, 100)}...`
+    );
+
     const historyContext = history.slice(-3).map((change, index) => 
       `${index + 1}. ${new Date(change.timestamp).toLocaleTimeString()}: ${change.context}`
     );
     const actionContext = actionHistory.slice(-3).map((item, idx) =>
       `A${idx + 1}. ${new Date(item.timestamp).toLocaleTimeString()}: [${item.app}] ${item.title}`
     );
-    const mergedHistory = [...historyContext, ...actionContext];
+    const mergedHistory = [...historyContext, ...actionContext, ...memoryContext];
 
-    const prompt = `画面を継続的に監視しています。以下の文脈で、現在の画面に対してTODOリストと要点(summary)を日本語でJSON形式で返してください。\n\n最近の画面変化の履歴・状況・操作履歴を考慮してください。\n\n現在の状況：${context}\n\n出力例：\n{\n  \"todo\": [\"やるべきこと1\", \"やるべきこと2\"],\n  \"summary\": \"要点のまとめ\"\n}`;
+    const prompt = `画面を継続的に監視しています。以下の文脈で、現在の画面に対してTODOリストと要点(summary)を日本語でJSON形式で返してください。\n\n最近の画面変化の履歴・状況・操作履歴・関連する記憶を考慮してください。\n\n現在の状況：${context}\n\n出力例：\n{\n  \"todo\": [\"やるべきこと1\", \"やるべきこと2\"],\n  \"summary\": \"要点のまとめ\"\n}`;
 
     try {
       const result = await callGeminiAPI({
@@ -200,7 +234,10 @@ export const useScreenMonitor = (props: ScreenMonitorProps) => {
         history: mergedHistory,
         outputFormat: 'json',
       });
+      
       if (typeof result === 'object') {
+        // 構造化アドバイスを記録
+        await recordAdviceRequest(prompt, JSON.stringify(result), context);
         return { ...result, raw: JSON.stringify(result) };
       } else {
         return { raw: result };
@@ -209,7 +246,7 @@ export const useScreenMonitor = (props: ScreenMonitorProps) => {
       console.error('Error generating structured advice:', error);
       return { raw: '構造化アドバイス生成中にエラーが発生しました' };
     }
-  }, [geminiApiKey, actionHistory]);
+  }, [geminiApiKey, actionHistory, recordAdviceRequest, searchMemories]);
 
   // 画面を監視する関数
   const monitorScreen = useCallback(async () => {
@@ -233,9 +270,29 @@ export const useScreenMonitor = (props: ScreenMonitorProps) => {
             context,
           };
           setScreenHistory(prev => [...prev.slice(-9), newChange]); // 最新10件を保持
+          
+          // スクリーンショットアクションを記録
+          await recordScreenshot(context, {
+            changePercentage,
+            ocrText: ocrText || undefined,
+          });
+          
           // 文脈に基づいたアドバイスを生成
           const advice = await generateContextualAdvice(blob, context, screenHistory);
           setCurrentAdvice(advice);
+          
+          // 重要な画面変化は自動的に記憶として保存
+          if (changePercentage > 0.3 && ocrText && ocrText.length > 50) {
+            await saveMemory(
+              'pattern',
+              `画面変化: ${new Date().toLocaleString()}`,
+              context,
+              ['screen-change', 'auto-saved'],
+              changePercentage,
+              []
+            );
+          }
+          
           // 構造化アドバイスも自動生成
           if (props.onStructuredAdvice) {
             const structured = await generateStructuredAdvice(blob, context, screenHistory);
@@ -247,7 +304,9 @@ export const useScreenMonitor = (props: ScreenMonitorProps) => {
     } catch (error) {
       console.error('Screen monitoring error:', error);
     }
-  }, [lastScreenshot, config.changeThreshold, calculateImageDifference, takeScreenshotAsBase64, generateContextualAdvice, generateStructuredAdvice, screenHistory, props.onStructuredAdvice]);
+  }, [lastScreenshot, config.changeThreshold, calculateImageDifference, takeScreenshotAsBase64, 
+      generateContextualAdvice, generateStructuredAdvice, screenHistory, props.onStructuredAdvice,
+      recordScreenshot, saveMemory]);
 
   // 監視を開始
   const startMonitoring = useCallback(() => {
@@ -294,6 +353,7 @@ export const useScreenMonitor = (props: ScreenMonitorProps) => {
     isMonitoring,
     screenHistory,
     currentAdvice,
+    suggestions, // AIの提案を返す
     startMonitoring,
     stopMonitoring,
     clearHistory: () => setScreenHistory([]),

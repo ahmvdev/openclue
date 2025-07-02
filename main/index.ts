@@ -7,6 +7,7 @@ import activeWin from 'active-win';
 import { getURL } from "./lib/getUrl";
 import isDev from "./lib/isDev";
 import store from "./lib/store";
+import userMemoryStore from "./lib/userMemoryStore";
 
 if (!isDev) {
   serve({ directory: join(__dirname, "renderer"), hostname: "openclue" });
@@ -343,4 +344,32 @@ ipcMain.handle('get-active-window', async () => {
   } catch (e) {
     return null;
   }
+});
+
+// User Memory Store handlers
+ipcMain.handle("memory/record-action", (_event, action) => {
+  userMemoryStore.recordAction(action);
+  return true;
+});
+
+ipcMain.handle("memory/save-memory", (_event, memory) => {
+  userMemoryStore.saveMemory(memory);
+  return true;
+});
+
+ipcMain.handle("memory/search-memories", (_event, query, limit) => {
+  return userMemoryStore.searchMemories(query, limit);
+});
+
+ipcMain.handle("memory/get-suggestions", (_event, context) => {
+  return userMemoryStore.getSuggestions(context);
+});
+
+ipcMain.handle("memory/export-data", () => {
+  return userMemoryStore.exportUserData();
+});
+
+ipcMain.handle("memory/import-data", (_event, data) => {
+  userMemoryStore.importUserData(data);
+  return true;
 });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FaSync, FaTrash, FaEye, FaEyeSlash, FaClock } from 'react-icons/fa';
+import { FaSync, FaTrash, FaEye, FaEyeSlash, FaClock, FaLightbulb, FaBrain } from 'react-icons/fa';
 import { useTranslation } from 'react-i18next';
 
 interface AdvicePanelProps {
@@ -8,6 +8,7 @@ interface AdvicePanelProps {
   isMonitoring: boolean;
   onClear: () => void;
   onToggleMonitoring: () => void;
+  suggestions?: string[];
 }
 
 const AdvicePanel: React.FC<AdvicePanelProps> = ({
@@ -15,9 +16,10 @@ const AdvicePanel: React.FC<AdvicePanelProps> = ({
   isMonitoring,
   onClear,
   onToggleMonitoring,
+  suggestions = [],
 }) => {
   const { t } = useTranslation();
-  if (!advice && !isMonitoring) {
+  if (!advice && !isMonitoring && suggestions.length === 0) {
     return null;
   }
 
@@ -92,7 +94,31 @@ const AdvicePanel: React.FC<AdvicePanelProps> = ({
           </div>
         ) : null}
         
-        {!isMonitoring && !advice && (
+        {/* AI提案セクション */}
+        {suggestions.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-blue-200">
+            <h4 className="text-xs font-semibold text-purple-700 mb-2 flex items-center gap-1">
+              <FaBrain className="w-3 h-3" />
+              AIの提案
+            </h4>
+            <div className="space-y-1">
+              {suggestions.map((suggestion, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="flex items-start gap-2"
+                >
+                  <FaLightbulb className="w-3 h-3 text-yellow-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-gray-600">{suggestion}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {!isMonitoring && !advice && suggestions.length === 0 && (
           <div className="text-center py-2">
             <button
               onClick={onToggleMonitoring}
