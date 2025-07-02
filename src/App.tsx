@@ -3,6 +3,7 @@ import Header from './components/Header';
 import MonitorSettings from './components/MonitorSettings';
 import AdvicePanel from './components/AdvicePanel';
 import SystemInfo from './components/SystemInfo';
+import { MemoryPanel } from './components/MemoryPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { useScreenMonitor } from './hooks/useScreenMonitor';
@@ -31,6 +32,7 @@ function App() {
   const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showMemoryPanel, setShowMemoryPanel] = useState(false);
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -40,6 +42,11 @@ function App() {
     enabled: false,
     changeThreshold: 0.05, // 5%の変化で検知
   });
+
+  // --- 構造化アドバイス用の状態 ---
+  const [structuredAdvice, setStructuredAdvice] = useState<StructuredAdvice | null>(null);
+  const [structuring, setStructuring] = useState(false);
+  const [structuredAdviceHistory, setStructuredAdviceHistory] = useState<StructuredAdvice[]>([]);
 
   // 設定を読み込む
   useEffect(() => {
@@ -63,32 +70,6 @@ function App() {
     loadSettings();
   }, []);
 
-  // ショートカットキーのイベントハンドラーを登録
-  useEffect(() => {
-    // スクリーンショットショートカット
-    const unsubscribeScreenshot = window.electron?.onTakeScreenshotShortcut(() => {
-      handleTakeScreenshot();
-    });
-
-    // 解決策取得ショートカット
-    const unsubscribeSolution = window.electron?.onGetSolutionShortcut(() => {
-      if (text.trim()) {
-        handleGetSolution();
-      }
-    });
-
-    return () => {
-      // クリーンアップ
-      if (typeof unsubscribeScreenshot === 'function') unsubscribeScreenshot();
-      if (typeof unsubscribeSolution === 'function') unsubscribeSolution();
-    };
-  }, [text]);
-
-  // 構造化アドバイス用の状態
-  const [structuredAdvice, setStructuredAdvice] = useState<StructuredAdvice | null>(null);
-  const [structuring, setStructuring] = useState(false);
-  const [structuredAdviceHistory, setStructuredAdviceHistory] = useState<StructuredAdvice[]>([]);
-
   // --- 履歴の永続化: 初期化・復元 ---
   useEffect(() => {
     const loadAdviceHistory = async () => {
@@ -100,14 +81,16 @@ function App() {
           const converted = saved.map((item: any) => ({
             ...item,
             todo: Array.isArray(item.todo)
-              ? item.todo.map((t: any) => typeof t === 'string' ? { text: t, checked: false } : t)
+              ? item.todo.map((t: string | TodoItem) => typeof t === 'string' ? { text: t, checked: false } : t)
               : undefined,
           }));
           setStructuredAdviceHistory(converted);
         } else {
           setStructuredAdviceHistory([]);
         }
-      } catch (e) {}
+      } catch (e) {
+        // エラーは無視
+      }
     };
     loadAdviceHistory();
     // 言語切替時も履歴を切り替え
@@ -121,13 +104,59 @@ function App() {
     }
   }, [structuredAdviceHistory, i18n.language]);
 
+  // --- ショートカットキーのイベントハンドラーで使う関数を先に宣言 ---
+  const handleTakeScreenshot = async () => {
+    try {
+      const screenshot = await window.electron.takeScreenshot();
+      const base64 = await blobToBase64(screenshot);
+      // スクリーンショットを保存（必要に応じて）
+      const screenshots = await window.electron?.store.get('screenshots') || [];
+      screenshots.push({
+        timestamp: new Date().toISOString(),
+        data: base64
+      });
+      // 最新の5つのみ保持
+      if (screenshots.length > 5) {
+        screenshots.shift();
+      }
+      await window.electron?.store.set('screenshots', screenshots);
+      toast.success('スクリーンショットを撮影しました');
+    } catch (error) {
+      console.error('Screenshot error:', error);
+      toast.error('スクリーンショットの撮影に失敗しました');
+    }
+  };
+
+  const handleGetSolution = async () => {
+    await handleKeyDown({ key: 'Enter' } as React.KeyboardEvent<HTMLInputElement>);
+  };
+
+  // ショートカットキーのイベントハンドラーを登録
+  useEffect(() => {
+    // スクリーンショットショートカット
+    const unsubscribeScreenshot = window.electron?.onTakeScreenshotShortcut(() => {
+      handleTakeScreenshot();
+    });
+    // 解決策取得ショートカット
+    const unsubscribeSolution = window.electron?.onGetSolutionShortcut(() => {
+      if (text.trim()) {
+        handleGetSolution();
+      }
+    });
+    return () => {
+      // クリーンアップ
+      if (typeof unsubscribeScreenshot === 'function') unsubscribeScreenshot();
+      if (typeof unsubscribeSolution === 'function') unsubscribeSolution();
+    };
+  }, [text, handleGetSolution, handleTakeScreenshot]);
+
   // structuredAdviceが更新されたら履歴に追加
   useEffect(() => {
     if (structuredAdvice && (structuredAdvice.summary || (structuredAdvice.todo && structuredAdvice.todo.length > 0))) {
       setStructuredAdviceHistory(prev => {
         // todo: string[] → TodoItem[]
         const todo = structuredAdvice.todo
-          ? structuredAdvice.todo.map((t: any) => typeof t === 'string' ? { text: t, checked: false } : t)
+          ? structuredAdvice.todo.map((t: string | TodoItem) => typeof t === 'string' ? { text: t, checked: false } : t)
           : undefined;
         const newItem: StructuredAdvice = { ...structuredAdvice, todo, timestamp: Date.now() };
         const arr = [...prev, newItem];
@@ -176,7 +205,12 @@ function App() {
 
   // 画面変化時の自動構造化アドバイス反映用コールバック
   const handleAutoStructuredAdvice = (advice: { todo?: string[]; summary?: string; raw?: string }) => {
-    setStructuredAdvice(advice);
+    // string[]をTodoItem[]に変換
+    const structuredAdvice: StructuredAdvice = {
+      ...advice,
+      todo: advice.todo ? advice.todo.map(text => ({ text, checked: false })) : undefined
+    };
+    setStructuredAdvice(structuredAdvice);
   };
 
   // 画面監視フックを使用
@@ -188,6 +222,7 @@ function App() {
     clearAdvice,
     generateStructuredAdvice,
     screenHistory,
+    suggestions,
   } = useScreenMonitor({
     ...monitorConfig,
     geminiApiKey,
@@ -218,40 +253,11 @@ function App() {
         language: i18n.language.startsWith('en') ? 'en' : 'ja',
       });
       return typeof result === 'string' ? result : JSON.stringify(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error calling Gemini API:', error);
       return t('app.geminiApiError');
     }
   }
-
-  const handleTakeScreenshot = async () => {
-    try {
-      const screenshot = await window.electron.takeScreenshot();
-      const base64 = await blobToBase64(screenshot);
-      
-      // スクリーンショットを保存（必要に応じて）
-      const screenshots = await window.electron?.store.get('screenshots') || [];
-      screenshots.push({
-        timestamp: new Date().toISOString(),
-        data: base64
-      });
-      
-      // 最新の5つのみ保持
-      if (screenshots.length > 5) {
-        screenshots.shift();
-      }
-      
-      await window.electron?.store.set('screenshots', screenshots);
-      toast.success('スクリーンショットを撮影しました');
-    } catch (error) {
-      console.error('Screenshot error:', error);
-      toast.error('スクリーンショットの撮影に失敗しました');
-    }
-  };
-
-  const handleGetSolution = async () => {
-    await handleKeyDown({ key: 'Enter' } as React.KeyboardEvent<HTMLInputElement>);
-  };
 
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && text.trim() !== '') {
@@ -331,7 +337,12 @@ function App() {
         return;
       }
       const result = await generateStructuredAdvice(last.screenshot, last.context, screenHistory);
-      setStructuredAdvice(result);
+      // string[]をTodoItem[]に変換
+      const structuredResult: StructuredAdvice = {
+        ...result,
+        todo: result.todo ? result.todo.map((text: string) => ({ text, checked: false })) : undefined
+      };
+      setStructuredAdvice(structuredResult);
     } catch (e) {
       toast.error('構造化アドバイス生成に失敗しました');
     } finally {
@@ -345,6 +356,7 @@ function App() {
         onSettingsClick={() => setShowSettings(!showSettings)}
         isMonitoring={isMonitoring}
         onToggleMonitoring={toggleMonitoring}
+        onMemoryClick={() => setShowMemoryPanel(!showMemoryPanel)}
       />
 
       <section className="no-drag flex justify-center items-start mt-4 px-4">
@@ -403,6 +415,7 @@ function App() {
           isMonitoring={isMonitoring}
           onClear={clearAdvice}
           onToggleMonitoring={toggleMonitoring}
+          suggestions={suggestions}
         />
 
         {/* 構造化アドバイス生成ボタンと表示 */}
@@ -556,6 +569,11 @@ function App() {
           isMonitoring={isMonitoring}
         />
       </section>
+
+      <MemoryPanel 
+        isVisible={showMemoryPanel}
+        onClose={() => setShowMemoryPanel(false)}
+      />
 
       {/* Toast通知 */}
       <Toaster
