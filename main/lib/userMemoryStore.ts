@@ -1,4 +1,5 @@
 import Store from 'electron-store';
+import { v4 as uuidv4 } from 'uuid';
 
 // ユーザー行動の履歴エントリ
 interface UserActionEntry {
@@ -137,16 +138,16 @@ class UserMemoryStore {
       timestamp: Date.now(),
     };
     
-    const history = this.store.get('actionHistory');
+    const history = (this.store as any).get('actionHistory');
     history.push(entry);
     
     // 最大エントリ数を超えたら古いものを削除
-    const maxEntries = this.store.get('memorySettings.maxHistoryEntries');
+    const maxEntries = (this.store as any).get('memorySettings.maxHistoryEntries');
     if (history.length > maxEntries) {
       history.splice(0, history.length - maxEntries);
     }
     
-    this.store.set('actionHistory', history);
+    (this.store as any).set('actionHistory', history);
     
     // アプリ使用統計を更新
     if (action.applicationName) {
@@ -154,7 +155,7 @@ class UserMemoryStore {
     }
     
     // パターン認識の更新
-    if (this.store.get('memorySettings.autoLearnEnabled')) {
+    if ((this.store as any).get('memorySettings.autoLearnEnabled')) {
       this.detectPatterns();
     }
   }
@@ -170,61 +171,83 @@ class UserMemoryStore {
       lastAccessed: Date.now(),
     };
     
-    const memories = this.store.get('longTermMemory');
+    const memories = (this.store as any).get('longTermMemory');
     memories.push(entry);
     
     // 最大エントリ数を超えたら関連性の低いものを削除
-    const maxEntries = this.store.get('memorySettings.maxMemoryEntries');
+    const maxEntries = (this.store as any).get('memorySettings.maxMemoryEntries');
     if (memories.length > maxEntries) {
-      memories.sort((a, b) => (a.relevanceScore * a.accessCount) - (b.relevanceScore * b.accessCount));
+      memories.sort((a: MemoryEntry, b: MemoryEntry) => (a.relevanceScore * a.accessCount) - (b.relevanceScore * b.accessCount));
       memories.splice(0, memories.length - maxEntries);
     }
     
-    this.store.set('longTermMemory', memories);
+    (this.store as any).set('longTermMemory', memories);
   }
   
-  // 関連する記憶を検索
-  searchMemories(query: string, limit: number = 10): MemoryEntry[] {
-    const memories = this.store.get('longTermMemory');
+  // 関連する記憶を検索（TF-IDFによるセマンティック検索モード追加）
+  searchMemories(query: string, limit: number = 10, useSemantic: boolean = false): MemoryEntry[] {
+    const memories = (this.store as any).get('longTermMemory') as MemoryEntry[];
     const queryLower = query.toLowerCase();
     
-    // スコアリング
-    const scored = memories.map(memory => {
-      let score = 0;
-      
-      // タイトルマッチ
-      if (memory.title.toLowerCase().includes(queryLower)) {
-        score += 3;
-      }
-      
-      // コンテンツマッチ
-      if (memory.content.toLowerCase().includes(queryLower)) {
-        score += 2;
-      }
-      
-      // タグマッチ
-      memory.tags.forEach(tag => {
-        if (tag.toLowerCase().includes(queryLower)) {
-          score += 1;
-        }
+    if (useSemantic) {
+      // --- TF-IDFスコア計算 ---
+      // 各メモリのテキストを単語配列に分割
+      const docs = memories.map((m: MemoryEntry) => (m.title + ' ' + m.content + ' ' + m.tags.join(' ')).toLowerCase().split(/\W+/));
+      const queryWords = queryLower.split(/\W+/);
+      const docCount = docs.length;
+      // 単語ごとのDF（文書頻度）
+      const df: Record<string, number> = {};
+      docs.forEach((doc: string[]) => {
+        [...new Set(doc)].forEach((word: string) => {
+          if (!df[word]) df[word] = 0;
+          df[word]++;
+        });
       });
-      
-      // 関連性スコアと最近のアクセスを考慮
+      // 各メモリのスコア計算
+      const scored = memories.map((memory: MemoryEntry, i: number) => {
+        let score = 0;
+        queryWords.forEach((word: string) => {
+          if (!word) return;
+          // TF: doc内の単語出現回数
+          const tf = docs[i].filter((w: string) => w === word).length;
+          // IDF: log(N/df)
+          const idf = df[word] ? Math.log(docCount / df[word]) : 0;
+          score += tf * idf;
+        });
+        // relevanceScoreやアクセス補正も加味
+        score *= memory.relevanceScore;
+        score *= (1 + memory.accessCount * 0.1);
+        const daysSinceAccess = (Date.now() - memory.lastAccessed) / (1000 * 60 * 60 * 24);
+        score *= Math.exp(-daysSinceAccess / 30);
+        return { memory, score };
+      });
+      return scored
+        .sort((a: {score: number}, b: {score: number}) => b.score - a.score)
+        .slice(0, limit)
+        .map((item: {memory: MemoryEntry}) => {
+          item.memory.accessCount++;
+          item.memory.lastAccessed = Date.now();
+          return item.memory;
+        });
+    }
+    // --- 既存の部分一致スコアリング ---
+    const scored = memories.map((memory: MemoryEntry) => {
+      let score = 0;
+      if (memory.title.toLowerCase().includes(queryLower)) score += 3;
+      if (memory.content.toLowerCase().includes(queryLower)) score += 2;
+      memory.tags.forEach((tag: string) => {
+        if (tag.toLowerCase().includes(queryLower)) score += 1;
+      });
       score *= memory.relevanceScore;
       score *= (1 + memory.accessCount * 0.1);
-      
       const daysSinceAccess = (Date.now() - memory.lastAccessed) / (1000 * 60 * 60 * 24);
-      score *= Math.exp(-daysSinceAccess / 30); // 30日で減衰
-      
+      score *= Math.exp(-daysSinceAccess / 30);
       return { memory, score };
     });
-    
-    // スコア順にソートして上位を返す
     return scored
-      .sort((a, b) => b.score - a.score)
+      .sort((a: {score: number}, b: {score: number}) => b.score - a.score)
       .slice(0, limit)
-      .map(item => {
-        // アクセスカウントを更新
+      .map((item: {memory: MemoryEntry}) => {
         item.memory.accessCount++;
         item.memory.lastAccessed = Date.now();
         return item.memory;
@@ -233,7 +256,7 @@ class UserMemoryStore {
   
   // アプリ使用統計を更新
   private updateAppStats(appName: string): void {
-    const stats = this.store.get('appUsageStats');
+    const stats = (this.store as any).get('appUsageStats');
     
     if (!stats[appName]) {
       stats[appName] = {
@@ -249,20 +272,20 @@ class UserMemoryStore {
     stats[appName].frequency++;
     stats[appName].lastUsed = Date.now();
     
-    this.store.set('appUsageStats', stats);
+    (this.store as any).set('appUsageStats', stats);
   }
   
   // パターン認識
   private detectPatterns(): void {
-    const history = this.store.get('actionHistory');
-    const patterns = this.store.get('behaviorPatterns');
+    const history = (this.store as any).get('actionHistory');
+    const patterns = (this.store as any).get('behaviorPatterns');
     
     // 簡単なパターン検出ロジック（実際はもっと複雑にできる）
     // 例：特定の時間帯に特定のアプリを使う傾向
     const recentActions = history.slice(-100);
     const timePatterns: Record<string, string[]> = {};
     
-    recentActions.forEach(action => {
+    recentActions.forEach((action: UserActionEntry) => {
       const hour = new Date(action.timestamp).getHours();
       const timeSlot = `${hour}:00-${hour + 1}:00`;
       
@@ -275,7 +298,7 @@ class UserMemoryStore {
     });
     
     // パターンを更新
-    Object.entries(timePatterns).forEach(([timeSlot, apps]) => {
+    Object.entries(timePatterns).forEach(([timeSlot, apps]: [string, string[]]) => {
       const mostFrequentApp = this.getMostFrequent(apps);
       if (mostFrequentApp && this.getFrequencyRate(apps, mostFrequentApp) > 0.5) {
         const patternId = `time-app-${timeSlot}-${mostFrequentApp}`;
@@ -299,15 +322,47 @@ class UserMemoryStore {
       }
     });
     
-    this.store.set('behaviorPatterns', patterns);
+    // --- シーケンスパターン検出の追加 ---
+    // 例: 3つのアプリの連続利用パターンを検出
+    const sequenceLength = 3;
+    const sequenceCounts: Record<string, number> = {};
+    for (let i = 0; i <= recentActions.length - sequenceLength; i++) {
+      const seq = recentActions.slice(i, i + sequenceLength).map(a => a.applicationName || '').join('>');
+      if (seq.includes('')) continue; // 空アプリ名はスキップ
+      if (!sequenceCounts[seq]) sequenceCounts[seq] = 0;
+      sequenceCounts[seq]++;
+    }
+    Object.entries(sequenceCounts).forEach(([seq, count]: [string, number]) => {
+      if (count > 1) { // 2回以上繰り返されたシーケンスのみ
+        const patternId = `app-seq-${seq}`;
+        const existingPattern = patterns.find(p => p.id === patternId);
+        if (existingPattern) {
+          existingPattern.frequency += count;
+          existingPattern.lastOccurred = Date.now();
+          existingPattern.confidence = Math.min(existingPattern.confidence * 1.1, 1);
+        } else {
+          patterns.push({
+            id: patternId,
+            pattern: `アプリ利用シーケンス: ${seq}`,
+            frequency: count,
+            lastOccurred: Date.now(),
+            triggers: seq.split('>'),
+            outcomes: [],
+            confidence: 0.5,
+          });
+        }
+      }
+    });
+    
+    (this.store as any).set('behaviorPatterns', patterns);
   }
   
   // 提案を生成
   getSuggestions(context: { currentTime: Date; currentApp?: string; recentQuery?: string }): string[] {
     const suggestions: string[] = [];
-    const patterns = this.store.get('behaviorPatterns');
-    const memories = this.store.get('longTermMemory');
-    const profile = this.store.get('userProfile');
+    const patterns = (this.store as any).get('behaviorPatterns');
+    const memories = (this.store as any).get('longTermMemory');
+    const profile = (this.store as any).get('userProfile');
     
     // 時間ベースの提案
     const currentHour = context.currentTime.getHours();
@@ -317,14 +372,14 @@ class UserMemoryStore {
       p.triggers.includes(timeSlot) && p.confidence > 0.7
     );
     
-    timePatterns.forEach(pattern => {
+    timePatterns.forEach((pattern: BehaviorPattern) => {
       suggestions.push(`この時間帯は通常${pattern.outcomes[0]}を使用されています`);
     });
     
     // 最近のクエリに基づく提案
     if (context.recentQuery) {
       const relatedMemories = this.searchMemories(context.recentQuery, 3);
-      relatedMemories.forEach(memory => {
+      relatedMemories.forEach((memory: MemoryEntry) => {
         suggestions.push(`関連情報: ${memory.title}`);
       });
     }
@@ -340,21 +395,21 @@ class UserMemoryStore {
   
   // ユーティリティ関数
   private generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return uuidv4();
   }
   
   private getMostFrequent<T>(arr: T[]): T | null {
     if (arr.length === 0) return null;
     
     const counts = new Map<T, number>();
-    arr.forEach(item => {
+    arr.forEach((item: T) => {
       counts.set(item, (counts.get(item) || 0) + 1);
     });
     
     let maxCount = 0;
     let mostFrequent: T | null = null;
     
-    counts.forEach((count, item) => {
+    counts.forEach((count: number, item: T) => {
       if (count > maxCount) {
         maxCount = count;
         mostFrequent = item;
@@ -366,36 +421,36 @@ class UserMemoryStore {
   
   private getFrequencyRate<T>(arr: T[], item: T): number {
     if (arr.length === 0) return 0;
-    return arr.filter(i => i === item).length / arr.length;
+    return arr.filter((i: T) => i === item).length / arr.length;
   }
   
   // 定期的なクリーンアップ
   private scheduleCleanup(): void {
     setInterval(() => {
-      const retentionDays = this.store.get('memorySettings.retentionDays');
+      const retentionDays = (this.store as any).get('memorySettings.retentionDays');
       const cutoffTime = Date.now() - (retentionDays * 24 * 60 * 60 * 1000);
       
       // 古い履歴を削除
-      let history = this.store.get('actionHistory');
-      history = history.filter(entry => entry.timestamp > cutoffTime);
-      this.store.set('actionHistory', history);
+      let history = (this.store as any).get('actionHistory');
+      history = history.filter((entry: UserActionEntry) => entry.timestamp > cutoffTime);
+      (this.store as any).set('actionHistory', history);
       
       // 古いパターンを削除
-      let patterns = this.store.get('behaviorPatterns');
-      patterns = patterns.filter(pattern => pattern.lastOccurred > cutoffTime);
-      this.store.set('behaviorPatterns', patterns);
+      let patterns = (this.store as any).get('behaviorPatterns');
+      patterns = patterns.filter((pattern: BehaviorPattern) => pattern.lastOccurred > cutoffTime);
+      (this.store as any).set('behaviorPatterns', patterns);
     }, 24 * 60 * 60 * 1000); // 1日ごと
   }
   
   // エクスポート機能
   exportUserData(): UserMemorySchema {
-    return this.store.store;
+    return (this.store as any).store;
   }
   
   // インポート機能
   importUserData(data: Partial<UserMemorySchema>): void {
     Object.entries(data).forEach(([key, value]) => {
-      this.store.set(key as keyof UserMemorySchema, value);
+      (this.store as any).set(key as keyof UserMemorySchema, value);
     });
   }
 }

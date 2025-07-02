@@ -21,12 +21,12 @@ let isQuitting = false;
 function saveWindowPosition() {
   if (win) {
     const bounds = win.getBounds();
-    store.set('windowBounds', bounds);
+    (store as any).set('windowBounds', bounds);
   }
 }
 
 function restoreWindowPosition() {
-  const savedBounds = store.get('windowBounds');
+  const savedBounds = (store as any).get('windowBounds');
   if (savedBounds && win) {
     win.setBounds(savedBounds);
   }
@@ -34,33 +34,38 @@ function restoreWindowPosition() {
 
 // トレイアイコンを作成
 function createTray() {
-  const iconPath = isDev 
-    ? path.join(__dirname, '..', 'assets', 'icons', 'icon.png')
-    : path.join(process.resourcesPath, 'app', 'assets', 'icons', 'icon.png');
-  
+  // より堅牢なパス解決
+  let iconPath = isDev 
+    ? path.resolve(app.getAppPath(), 'assets', 'icons', 'icon.png')
+    : path.resolve(process.resourcesPath, 'app', 'assets', 'icons', 'icon.png');
+
+  let icon: Electron.NativeImage;
   if (fs.existsSync(iconPath)) {
-    const icon = nativeImage.createFromPath(iconPath);
-    tray = new Tray(icon.resize({ width: 16, height: 16 }));
-    
-    const contextMenu = Menu.buildFromTemplate([
-      { label: 'Show OpenClue Kai', click: () => { win?.show(); } },
-      { label: 'Hide OpenClue Kai', click: () => { win?.hide(); } },
-      { type: 'separator' },
-      { label: 'Quit', click: () => { isQuitting = true; app.quit(); } }
-    ]);
-    
-    tray.setToolTip('OpenClue Kai');
-    tray.setContextMenu(contextMenu);
-    
-    tray.on('click', () => {
-      if (win?.isVisible()) {
-        win.hide();
-      } else {
-        win?.show();
-        win?.focus();
-      }
-    });
+    icon = nativeImage.createFromPath(iconPath);
+  } else {
+    // フォールバック: デフォルトアイコン
+    icon = nativeImage.createEmpty();
   }
+  tray = new Tray(icon.resize({ width: 16, height: 16 }));
+
+  const contextMenu = Menu.buildFromTemplate([
+    { label: 'Show OpenClue Kai', click: () => { win?.show(); } },
+    { label: 'Hide OpenClue Kai', click: () => { win?.hide(); } },
+    { type: 'separator' },
+    { label: 'Quit', click: () => { isQuitting = true; app.quit(); } }
+  ]);
+
+  tray.setToolTip('OpenClue Kai');
+  tray.setContextMenu(contextMenu);
+
+  tray.on('click', () => {
+    if (win?.isVisible()) {
+      win.hide();
+    } else {
+      win?.show();
+      win?.focus();
+    }
+  });
 }
 
 function createWindow() {
@@ -300,21 +305,21 @@ ipcMain.handle("open-external", (_event, url: string) => {
 
 // Store API handlers
 ipcMain.handle("store/get", (_event, key) => {
-  return store.get(key);
+  return (store as any).get(key);
 });
 
 ipcMain.handle("store/set", (_event, key, value) => {
-  store.set(key, value);
+  (store as any).set(key, value);
   return true;
 });
 
 ipcMain.handle("store/delete", (_event, key) => {
-  store.delete(key);
+  (store as any).delete(key);
   return true;
 });
 
 ipcMain.handle("store/clear", () => {
-  store.clear();
+  (store as any).clear();
   return true;
 });
 
@@ -339,7 +344,7 @@ ipcMain.handle('get-active-window', async () => {
       title: win.title,
       app: win.owner.name,
       processId: win.owner.processId,
-      url: win.url || null,
+      url: 'url' in win ? (win as any).url : null,
     };
   } catch (e) {
     return null;
