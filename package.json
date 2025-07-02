@@ -5,7 +5,7 @@
         "name": "OpenClue Kai Contributors",
         "email": "openclue@example.com"
     },
-    "version": "1.0.2",
+    "version": "1.0.3",
     "main": "app/index.js",
     "scripts": {
         "dev": "vite",
