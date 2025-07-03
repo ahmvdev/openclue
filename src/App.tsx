@@ -261,6 +261,12 @@ function App() {
     onStructuredAdvice: handleAutoStructuredAdvice,
   });
 
+  // メモリー機能をバックグラウンドで動作（UIなし）
+  useUserMemory({
+    autoRecord: true,
+    recordInterval: 60000,
+  });
+
   function blobToBase64(blob: Blob): Promise<string> {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -365,7 +371,7 @@ function App() {
   const toggleMonitoring = () => {
     updateMonitorConfig({ enabled: !monitorConfig.enabled });
     if (!monitorConfig.enabled) {
-      toast.success("画面監視を開��しました");
+      toast.success("��面監視を開��しました");
     } else {
       toast.success("画面監視を停止しました");
     }
