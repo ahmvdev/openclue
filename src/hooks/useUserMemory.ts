@@ -294,16 +294,6 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
     return organizationInsights?.qualityScore || 0;
   }, [organizationInsights]);
 
-  // 最近の記憶を更新
-  const refreshRecentMemories = useCallback(async () => {
-    try {
-      const memories = await window.electron.memory.searchMemories("", 5);
-      setRecentMemories(memories);
-    } catch (error) {
-      console.error("Failed to refresh recent memories:", error);
-    }
-  }, []);
-
   // 提案を更新
   const updateSuggestions = useCallback(
     async (currentApp?: string, recentQuery?: string) => {
@@ -412,7 +402,7 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
     [recordAction, updateSuggestions],
   );
 
-  // ���プリ切り替え時にアクションを記録
+  // アプリ切り替え時にアクションを記録
   const recordAppSwitch = useCallback(
     async (appName: string, windowTitle: string) => {
       await recordAction("app_switch", {
