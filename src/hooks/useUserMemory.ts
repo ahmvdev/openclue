@@ -24,12 +24,18 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
   } = options;
 
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [advancedSuggestions, setAdvancedSuggestions] = useState<
+    AdvancedSuggestion[]
+  >([]);
   const [recentMemories, setRecentMemories] = useState<MemoryEntry[]>([]);
   const [isRecording, setIsRecording] = useState(true); // 常にオン
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<{ tag: string; count: number }[]>([]);
   const [memoryStats, setMemoryStats] = useState<any>(null);
+  const [organizationInsights, setOrganizationInsights] =
+    useState<MemoryOrganizationInsights | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [isOrganizing, setIsOrganizing] = useState(false);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -217,7 +223,7 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
     }
   }, []);
 
-  // 統計情報
+  // 統計情��
   const getMemoryStats = useCallback(async () => {
     try {
       const stats = await window.electron.memory.getMemoryStats();
@@ -376,10 +382,43 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
       await getAllTags();
       await getMemoryStats();
       await updateSuggestions();
+      await generateAdvancedSuggestions();
     };
 
     initializeData();
   }, []);
+
+  // 定期的な高度提案更新
+  useEffect(() => {
+    const interval = setInterval(
+      async () => {
+        await generateAdvancedSuggestions();
+      },
+      15 * 60 * 1000,
+    ); // 15分ごと
+
+    return () => clearInterval(interval);
+  }, [generateAdvancedSuggestions]);
+
+  // 定期的な自動整理（1日1回）
+  useEffect(() => {
+    const checkAndOrganize = async () => {
+      const lastOrganized = localStorage.getItem("lastMemoryOrganization");
+      const now = Date.now();
+      const oneDayMs = 24 * 60 * 60 * 1000;
+
+      if (!lastOrganized || now - parseInt(lastOrganized) > oneDayMs) {
+        await performAutoOrganization();
+        localStorage.setItem("lastMemoryOrganization", now.toString());
+      }
+    };
+
+    // 起動時と1時間ごとにチェック
+    checkAndOrganize();
+    const interval = setInterval(checkAndOrganize, 60 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [performAutoOrganization]);
 
   // クリーンアップ
   useEffect(() => {
@@ -393,12 +432,15 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
   return {
     // 状態
     suggestions,
+    advancedSuggestions,
     recentMemories,
     isRecording,
     searchHistory,
     allTags,
     memoryStats,
+    organizationInsights,
     isSearching,
+    isOrganizing,
 
     // アクション記録
     recordAction,
@@ -422,6 +464,12 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
 
     // 統計・分析
     getMemoryStats,
+    getMemoryQualityScore,
+
+    // 高度な機能
+    generateAdvancedSuggestions,
+    organizeMemories,
+    performAutoOrganization,
 
     // 提案
     updateSuggestions,
