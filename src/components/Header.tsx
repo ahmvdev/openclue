@@ -15,7 +15,6 @@ interface HeaderProps {
   onSettingsClick: () => void;
   isMonitoring: boolean;
   onToggleMonitoring: () => void;
-  onMemoryClick?: () => void;
 }
 
 interface ShortcutInfo {
@@ -27,7 +26,6 @@ const Header: React.FC<HeaderProps> = ({
   onSettingsClick,
   isMonitoring,
   onToggleMonitoring,
-  onMemoryClick,
 }) => {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
