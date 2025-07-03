@@ -1,4 +1,4 @@
-import userMemoryStore from "../../main/lib/userMemoryStore";
+// Memory organization service that works through IPC interface
 
 // 記憶統合・整理のための高度なサービス
 export interface MemoryCluster {
@@ -659,7 +659,7 @@ class MemoryOrganizationService {
 
   // ユーティリティメソッド
   private async getAllMemories(): Promise<any[]> {
-    return userMemoryStore.searchMemories("", 10000);
+    return await window.electron.memory.searchMemories("", 10000);
   }
 
   private async mergeDuplicateMemories(
@@ -677,7 +677,7 @@ class MemoryOrganizationService {
   }
 
   private async createMemoryCluster(cluster: MemoryCluster): Promise<void> {
-    // クラスター保存機能の実��
+    // クラスター保存機能の実装
     // 実装は userMemoryStore の機能拡張が必要
   }
 

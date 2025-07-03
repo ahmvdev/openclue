@@ -1,4 +1,4 @@
-import userMemoryStore from "../../main/lib/userMemoryStore";
+// Advanced suggestion service that works through IPC interface
 import { memoryOrganizationService } from "./memoryOrganizationService";
 
 // ユーザーの長期目標と行動分析
@@ -598,7 +598,7 @@ class AdvancedSuggestionService {
   // 目標更新
   private async updateGoals(): Promise<void> {
     // 記憶から目標関連情報を抽出して更新
-    const goalMemories = await userMemoryStore.searchMemories(
+    const goalMemories = await window.electron.memory.searchMemories(
       "目標 OR goal OR 計画",
       50,
     );
@@ -613,7 +613,8 @@ class AdvancedSuggestionService {
 
   // 行動パターン更新
   private async updateBehaviorPatterns(): Promise<void> {
-    const patterns = userMemoryStore.getBehaviorPatterns() || [];
+    // Since getBehaviorPatterns is not exposed through IPC, we'll simulate with empty array for now
+    const patterns: any[] = [];
 
     for (const pattern of patterns) {
       const enhancedPattern = await this.enhanceBehaviorPattern(pattern);
@@ -623,7 +624,7 @@ class AdvancedSuggestionService {
 
   // 学習プロファイル更新
   private async updateLearningProfile(): Promise<void> {
-    const learningMemories = await userMemoryStore.searchMemories(
+    const learningMemories = await window.electron.memory.searchMemories(
       "学習 OR 勉強 OR learning",
       30,
     );
