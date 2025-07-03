@@ -32,7 +32,7 @@ function App() {
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showMemoryPanel, setShowMemoryPanel] = useState(false);
+  // メモリーパネルは内部的に常に動作（UIは非表示）
   const [geminiApiKey, setGeminiApiKey] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -408,7 +408,6 @@ function App() {
         onSettingsClick={() => setShowSettings(!showSettings)}
         isMonitoring={true}
         onToggleMonitoring={() => {}} // 何もしない
-        onMemoryClick={() => setShowMemoryPanel(!showMemoryPanel)}
       />
 
       <section className="no-drag flex justify-center items-start mt-4 px-4">
