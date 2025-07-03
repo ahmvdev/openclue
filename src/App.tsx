@@ -3,7 +3,7 @@ import Header from "./components/Header";
 import MonitorSettings from "./components/MonitorSettings";
 import AdvicePanel from "./components/AdvicePanel";
 import SystemInfo from "./components/SystemInfo";
-import { MemoryPanel } from "./components/MemoryPanel";
+// メモリー機能は内部的に useUserMemory フックで動作
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { useScreenMonitor } from "./hooks/useScreenMonitor";
@@ -364,7 +364,7 @@ function App() {
   const toggleMonitoring = () => {
     updateMonitorConfig({ enabled: !monitorConfig.enabled });
     if (!monitorConfig.enabled) {
-      toast.success("画面監視を開始しました");
+      toast.success("画面監視を開��しました");
     } else {
       toast.success("画面監視を停止しました");
     }
@@ -473,7 +473,7 @@ function App() {
           suggestions={suggestions}
         />
 
-        {/* 構造化アドバイス生成ボタンと表示 */}
+        {/* 構造化アドバ���ス生成ボタンと表示 */}
         <div className="px-4 mt-4">
           <button
             onClick={handleStructuredAdvice}
@@ -668,11 +668,6 @@ function App() {
         {/* システム情報 */}
         <SystemInfo isVisible={showSettings} isMonitoring={true} />
       </section>
-
-      <MemoryPanel
-        isVisible={showMemoryPanel}
-        onClose={() => setShowMemoryPanel(false)}
-      />
 
       {/* Toast通知 */}
       <Toaster
