@@ -1,8 +1,19 @@
-import { app, BrowserWindow, ipcMain, desktopCapturer, globalShortcut, shell, screen, Tray, Menu, nativeImage } from "electron";
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  desktopCapturer,
+  globalShortcut,
+  shell,
+  screen,
+  Tray,
+  Menu,
+  nativeImage,
+} from "electron";
 import serve from "electron-serve";
 import path, { join } from "path";
 import fs from "fs";
-import activeWin from 'active-win';
+import activeWin from "active-win";
 
 import { getURL } from "./lib/getUrl";
 import isDev from "./lib/isDev";
@@ -21,12 +32,12 @@ let isQuitting = false;
 function saveWindowPosition() {
   if (win) {
     const bounds = win.getBounds();
-    (store as any).set('windowBounds', bounds);
+    (store as any).set("windowBounds", bounds);
   }
 }
 
 function restoreWindowPosition() {
-  const savedBounds = (store as any).get('windowBounds');
+  const savedBounds = (store as any).get("windowBounds");
   if (savedBounds && win) {
     win.setBounds(savedBounds);
   }
@@ -35,9 +46,9 @@ function restoreWindowPosition() {
 // トレイアイコンを作成
 function createTray() {
   // より堅牢なパス解決
-  let iconPath = isDev 
-    ? path.resolve(app.getAppPath(), 'assets', 'icons', 'icon.png')
-    : path.resolve(process.resourcesPath, 'app', 'assets', 'icons', 'icon.png');
+  let iconPath = isDev
+    ? path.resolve(app.getAppPath(), "assets", "icons", "icon.png")
+    : path.resolve(process.resourcesPath, "app", "assets", "icons", "icon.png");
 
   let icon: Electron.NativeImage;
   if (fs.existsSync(iconPath)) {
@@ -49,16 +60,32 @@ function createTray() {
   tray = new Tray(icon.resize({ width: 16, height: 16 }));
 
   const contextMenu = Menu.buildFromTemplate([
-    { label: 'Show OpenClue Kai', click: () => { win?.show(); } },
-    { label: 'Hide OpenClue Kai', click: () => { win?.hide(); } },
-    { type: 'separator' },
-    { label: 'Quit', click: () => { isQuitting = true; app.quit(); } }
+    {
+      label: "Show OpenClue Kai",
+      click: () => {
+        win?.show();
+      },
+    },
+    {
+      label: "Hide OpenClue Kai",
+      click: () => {
+        win?.hide();
+      },
+    },
+    { type: "separator" },
+    {
+      label: "Quit",
+      click: () => {
+        isQuitting = true;
+        app.quit();
+      },
+    },
   ]);
 
-  tray.setToolTip('OpenClue Kai');
+  tray.setToolTip("OpenClue Kai");
   tray.setContextMenu(contextMenu);
 
-  tray.on('click', () => {
+  tray.on("click", () => {
     if (win?.isVisible()) {
       win.hide();
     } else {
@@ -71,14 +98,15 @@ function createTray() {
 function createWindow() {
   // 画面サイズを取得
   const primaryDisplay = screen.getPrimaryDisplay();
-  const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
-  
+  const { width: screenWidth, height: screenHeight } =
+    primaryDisplay.workAreaSize;
+
   // 初期位置：画面右下
   const windowWidth = 370;
   const windowHeight = 100;
   const x = screenWidth - windowWidth - 20;
   const y = screenHeight - windowHeight - 20;
-  
+
   win = new BrowserWindow({
     width: windowWidth,
     height: windowHeight,
@@ -106,15 +134,15 @@ function createWindow() {
   restoreWindowPosition();
 
   // ウィンドウ位置が変更されたら保存
-  win.on('moved', () => {
+  win.on("moved", () => {
     saveWindowPosition();
   });
 
-  win.on('resized', () => {
+  win.on("resized", () => {
     saveWindowPosition();
   });
 
-  win.on('close', (event) => {
+  win.on("close", (event) => {
     if (!isQuitting) {
       event.preventDefault();
       win?.hide();
@@ -131,7 +159,7 @@ function createWindow() {
 
   const url = getURL("/");
   win.loadURL(url);
-  
+
   // トレイアイコンを作成
   createTray();
 }
@@ -140,20 +168,23 @@ app.whenReady().then(() => {
   createWindow();
 
   // グローバルショートカットを登録（改善版）
-  
+
   // Cmd/Ctrl + B: ウィンドウの表示/非表示を切り替え
-  globalShortcut.register(process.platform === 'darwin' ? 'Cmd+B' : 'Ctrl+B', () => {
-    if (!win) return;
-    if (win.isVisible()) {
-      win.hide();
-    } else {
-      win.show();
-      win.focus();
-    }
-  });
-  
+  globalShortcut.register(
+    process.platform === "darwin" ? "Cmd+B" : "Ctrl+B",
+    () => {
+      if (!win) return;
+      if (win.isVisible()) {
+        win.hide();
+      } else {
+        win.show();
+        win.focus();
+      }
+    },
+  );
+
   // Cmd/Ctrl + Shift + K: ウィンドウの表示/非表示を切り替え（互換性のため）
-  globalShortcut.register('Control+Shift+K', () => {
+  globalShortcut.register("Control+Shift+K", () => {
     if (!win) return;
     if (win.isVisible()) {
       win.hide();
@@ -162,59 +193,80 @@ app.whenReady().then(() => {
       win.focus();
     }
   });
-  
+
   // Cmd/Ctrl + H: スクリーンショットを撮る
-  globalShortcut.register(process.platform === 'darwin' ? 'Cmd+H' : 'Ctrl+H', () => {
-    win?.webContents.send('take-screenshot-shortcut');
-  });
-  
+  globalShortcut.register(
+    process.platform === "darwin" ? "Cmd+H" : "Ctrl+H",
+    () => {
+      win?.webContents.send("take-screenshot-shortcut");
+    },
+  );
+
   // Cmd/Ctrl + Enter: 解決策を取得
-  globalShortcut.register(process.platform === 'darwin' ? 'Cmd+Return' : 'Ctrl+Return', () => {
-    win?.webContents.send('get-solution-shortcut');
-  });
-  
+  globalShortcut.register(
+    process.platform === "darwin" ? "Cmd+Return" : "Ctrl+Return",
+    () => {
+      win?.webContents.send("get-solution-shortcut");
+    },
+  );
+
   // Cmd/Ctrl + Q: アプリケーションを終了
-  globalShortcut.register(process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q', () => {
-    isQuitting = true;
-    app.quit();
-  });
-  
+  globalShortcut.register(
+    process.platform === "darwin" ? "Cmd+Q" : "Ctrl+Q",
+    () => {
+      isQuitting = true;
+      app.quit();
+    },
+  );
+
   // Cmd/Ctrl + Shift + D: アプリケーションを終了（互換性のため）
-  globalShortcut.register('Control+Shift+D', () => {
+  globalShortcut.register("Control+Shift+D", () => {
     isQuitting = true;
     app.quit();
   });
-  
+
   // Cmd/Ctrl + 矢印キー: ウィンドウを移動
   const moveDistance = 20;
-  
-  globalShortcut.register(process.platform === 'darwin' ? 'Cmd+Up' : 'Ctrl+Up', () => {
-    if (win) {
-      const bounds = win.getBounds();
-      win.setBounds({ ...bounds, y: bounds.y - moveDistance });
-    }
-  });
-  
-  globalShortcut.register(process.platform === 'darwin' ? 'Cmd+Down' : 'Ctrl+Down', () => {
-    if (win) {
-      const bounds = win.getBounds();
-      win.setBounds({ ...bounds, y: bounds.y + moveDistance });
-    }
-  });
-  
-  globalShortcut.register(process.platform === 'darwin' ? 'Cmd+Left' : 'Ctrl+Left', () => {
-    if (win) {
-      const bounds = win.getBounds();
-      win.setBounds({ ...bounds, x: bounds.x - moveDistance });
-    }
-  });
-  
-  globalShortcut.register(process.platform === 'darwin' ? 'Cmd+Right' : 'Ctrl+Right', () => {
-    if (win) {
-      const bounds = win.getBounds();
-      win.setBounds({ ...bounds, x: bounds.x + moveDistance });
-    }
-  });
+
+  globalShortcut.register(
+    process.platform === "darwin" ? "Cmd+Up" : "Ctrl+Up",
+    () => {
+      if (win) {
+        const bounds = win.getBounds();
+        win.setBounds({ ...bounds, y: bounds.y - moveDistance });
+      }
+    },
+  );
+
+  globalShortcut.register(
+    process.platform === "darwin" ? "Cmd+Down" : "Ctrl+Down",
+    () => {
+      if (win) {
+        const bounds = win.getBounds();
+        win.setBounds({ ...bounds, y: bounds.y + moveDistance });
+      }
+    },
+  );
+
+  globalShortcut.register(
+    process.platform === "darwin" ? "Cmd+Left" : "Ctrl+Left",
+    () => {
+      if (win) {
+        const bounds = win.getBounds();
+        win.setBounds({ ...bounds, x: bounds.x - moveDistance });
+      }
+    },
+  );
+
+  globalShortcut.register(
+    process.platform === "darwin" ? "Cmd+Right" : "Ctrl+Right",
+    () => {
+      if (win) {
+        const bounds = win.getBounds();
+        win.setBounds({ ...bounds, x: bounds.x + moveDistance });
+      }
+    },
+  );
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -269,7 +321,7 @@ ipcMain.on("app/increase-height-bottom", (_event, deltaHeight: number) => {
         width: bounds.width,
         height: bounds.height + deltaHeight,
       },
-      true
+      true,
     );
   }
 });
@@ -277,20 +329,20 @@ ipcMain.on("app/increase-height-bottom", (_event, deltaHeight: number) => {
 // スクリーンショット機能
 ipcMain.handle("take-screenshot", async () => {
   try {
-    const sources = await desktopCapturer.getSources({ 
+    const sources = await desktopCapturer.getSources({
       types: ["screen"],
-      thumbnailSize: { 
+      thumbnailSize: {
         width: screen.getPrimaryDisplay().workAreaSize.width,
-        height: screen.getPrimaryDisplay().workAreaSize.height
-      }
+        height: screen.getPrimaryDisplay().workAreaSize.height,
+      },
     });
-    
+
     if (sources.length > 0) {
       const screen = sources[0];
       const dataUrl = screen.thumbnail.toDataURL();
       return dataUrl;
     }
-    
+
     throw new Error("No screen sources available");
   } catch (error) {
     console.error("Screenshot error:", error);
@@ -329,14 +381,14 @@ ipcMain.handle("get-window-state", () => {
     return {
       isVisible: win.isVisible(),
       isFocused: win.isFocused(),
-      bounds: win.getBounds()
+      bounds: win.getBounds(),
     };
   }
   return null;
 });
 
 // アクティブウィンドウ情報を取得
-ipcMain.handle('get-active-window', async () => {
+ipcMain.handle("get-active-window", async () => {
   try {
     const win = await activeWin();
     if (!win) return null;
@@ -344,7 +396,7 @@ ipcMain.handle('get-active-window', async () => {
       title: win.title,
       app: win.owner.name,
       processId: win.owner.processId,
-      url: 'url' in win ? (win as any).url : null,
+      url: "url" in win ? (win as any).url : null,
     };
   } catch (e) {
     return null;
@@ -362,8 +414,8 @@ ipcMain.handle("memory/save-memory", (_event, memory) => {
   return true;
 });
 
-ipcMain.handle("memory/search-memories", (_event, query, limit) => {
-  return userMemoryStore.searchMemories(query, limit);
+ipcMain.handle("memory/search-memories", (_event, query, limit, filters) => {
+  return userMemoryStore.searchMemories(query, limit, filters);
 });
 
 ipcMain.handle("memory/get-suggestions", (_event, context) => {
@@ -377,4 +429,31 @@ ipcMain.handle("memory/export-data", () => {
 ipcMain.handle("memory/import-data", (_event, data) => {
   userMemoryStore.importUserData(data);
   return true;
+});
+
+// Enhanced memory management handlers
+ipcMain.handle("memory/get-all-tags", () => {
+  return userMemoryStore.getAllTags();
+});
+
+ipcMain.handle("memory/merge-tags", (_event, oldTag, newTag) => {
+  userMemoryStore.mergeTags(oldTag, newTag);
+  return true;
+});
+
+ipcMain.handle("memory/remove-tag", (_event, tag) => {
+  userMemoryStore.removeTag(tag);
+  return true;
+});
+
+ipcMain.handle("memory/update-memory", (_event, id, updates) => {
+  return userMemoryStore.updateMemory(id, updates);
+});
+
+ipcMain.handle("memory/delete-memory", (_event, id) => {
+  return userMemoryStore.deleteMemory(id);
+});
+
+ipcMain.handle("memory/get-memory-stats", () => {
+  return userMemoryStore.getMemoryStats();
 });

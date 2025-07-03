@@ -2,7 +2,12 @@
 export interface UserActionEntry {
   id: string;
   timestamp: number;
-  actionType: 'screenshot' | 'advice_request' | 'app_switch' | 'file_access' | 'query';
+  actionType:
+    | "screenshot"
+    | "advice_request"
+    | "app_switch"
+    | "file_access"
+    | "query";
   applicationName?: string;
   windowTitle?: string;
   context?: string;
@@ -17,7 +22,7 @@ export interface MemoryEntry {
   id: string;
   createdAt: number;
   updatedAt: number;
-  type: 'note' | 'project' | 'preference' | 'pattern' | 'knowledge';
+  type: "note" | "project" | "preference" | "pattern" | "knowledge";
   title: string;
   content: string;
   tags: string[];
@@ -35,20 +40,20 @@ export interface IElectronAPI {
   minimize: () => void;
   close: () => void;
   quit: () => void;
-  
+
   // タイトルバーのトグル
   onToggleTitlebar: (callback: (show: boolean) => void) => void;
-  
+
   // ウィンドウサイズ変更
   increaseHeightFromBottom: (delta: number) => void;
 
   // スクリーンショット機能
   takeScreenshot: () => Promise<Blob>;
-  
+
   // ショートカットキーのイベントリスナー
   onTakeScreenshotShortcut: (callback: () => void) => void;
   onGetSolutionShortcut: (callback: () => void) => void;
-  
+
   // 外部リンクを開く
   openExternal: (url: string) => void;
 
@@ -59,7 +64,7 @@ export interface IElectronAPI {
     delete: (key: string) => Promise<boolean>;
     clear: () => Promise<boolean>;
   };
-  
+
   // ウィンドウ状態を取得
   getWindowState: () => Promise<{
     isVisible: boolean;
@@ -82,12 +87,49 @@ export interface IElectronAPI {
 
   // User Memory API
   memory: {
-    recordAction: (action: Omit<UserActionEntry, 'id' | 'timestamp'>) => Promise<boolean>;
-    saveMemory: (memory: Omit<MemoryEntry, 'id' | 'createdAt' | 'updatedAt' | 'accessCount' | 'lastAccessed'>) => Promise<boolean>;
-    searchMemories: (query: string, limit?: number) => Promise<MemoryEntry[]>;
-    getSuggestions: (context: { currentTime: Date; currentApp?: string; recentQuery?: string }) => Promise<string[]>;
+    recordAction: (
+      action: Omit<UserActionEntry, "id" | "timestamp">,
+    ) => Promise<boolean>;
+    saveMemory: (
+      memory: Omit<
+        MemoryEntry,
+        "id" | "createdAt" | "updatedAt" | "accessCount" | "lastAccessed"
+      >,
+    ) => Promise<boolean>;
+    searchMemories: (
+      query: string,
+      limit?: number,
+      filters?: {
+        type?: MemoryEntry["type"][];
+        tags?: string[];
+        dateRange?: { start: number; end: number };
+        minRelevance?: number;
+        sortBy?: "relevance" | "date" | "access";
+        useSemantic?: boolean;
+      },
+    ) => Promise<MemoryEntry[]>;
+    getSuggestions: (context: {
+      currentTime: Date;
+      currentApp?: string;
+      recentQuery?: string;
+    }) => Promise<string[]>;
     exportData: () => Promise<any>;
     importData: (data: any) => Promise<boolean>;
+    getAllTags: () => Promise<{ tag: string; count: number }[]>;
+    mergeTags: (oldTag: string, newTag: string) => Promise<boolean>;
+    removeTag: (tag: string) => Promise<boolean>;
+    updateMemory: (
+      id: string,
+      updates: Partial<Omit<MemoryEntry, "id" | "createdAt">>,
+    ) => Promise<boolean>;
+    deleteMemory: (id: string) => Promise<boolean>;
+    getMemoryStats: () => Promise<{
+      totalMemories: number;
+      memoryTypes: Record<string, number>;
+      totalTags: number;
+      averageRelevance: number;
+      mostAccessedMemory: MemoryEntry | null;
+    }>;
   };
 }
 

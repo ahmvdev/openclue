@@ -1,7 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { FaMemory, FaBatteryThreeQuarters, FaDesktop, FaExclamationTriangle } from 'react-icons/fa';
-import { useTranslation } from 'react-i18next';
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  FaMemory,
+  FaBatteryThreeQuarters,
+  FaDesktop,
+  FaExclamationTriangle,
+} from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 
 interface SystemInfoProps {
   isVisible: boolean;
@@ -19,7 +24,7 @@ const SystemInfo: React.FC<SystemInfoProps> = ({ isVisible, isMonitoring }) => {
 
     // メモリ使用量を取得（簡易的な実装）
     const updateMemoryUsage = () => {
-      if (performance && 'memory' in performance) {
+      if (performance && "memory" in performance) {
         const memory = (performance as any).memory;
         if (memory) {
           const usage = (memory.usedJSHeapSize / memory.totalJSHeapSize) * 100;
@@ -30,30 +35,30 @@ const SystemInfo: React.FC<SystemInfoProps> = ({ isVisible, isMonitoring }) => {
 
     // バッテリー状態を取得
     const updateBatteryStatus = async () => {
-      if ('getBattery' in navigator) {
+      if ("getBattery" in navigator) {
         try {
           const battery = await (navigator as any).getBattery();
           setBatteryLevel(Math.round(battery.level * 100));
           setIsCharging(battery.charging);
-          
-          battery.addEventListener('levelchange', () => {
+
+          battery.addEventListener("levelchange", () => {
             setBatteryLevel(Math.round(battery.level * 100));
           });
-          
-          battery.addEventListener('chargingchange', () => {
+
+          battery.addEventListener("chargingchange", () => {
             setIsCharging(battery.charging);
           });
         } catch (error) {
-          console.error('Battery API not available:', error);
+          console.error("Battery API not available:", error);
         }
       }
     };
 
     updateMemoryUsage();
     updateBatteryStatus();
-    
+
     const interval = setInterval(updateMemoryUsage, 5000);
-    
+
     return () => clearInterval(interval);
   }, [isVisible]);
 
@@ -61,24 +66,33 @@ const SystemInfo: React.FC<SystemInfoProps> = ({ isVisible, isMonitoring }) => {
 
   const getBatteryIcon = () => {
     if (batteryLevel === null) return null;
-    
+
     if (isCharging) {
-      return '🔌';
+      return "🔌";
     }
-    
-    if (batteryLevel > 75) return '🔋';
-    if (batteryLevel > 50) return '🔋';
-    if (batteryLevel > 25) return '🪫';
-    return '🪫';
+
+    if (batteryLevel > 75) return "🔋";
+    if (batteryLevel > 50) return "🔋";
+    if (batteryLevel > 25) return "🪫";
+    return "🪫";
   };
 
   const getMemoryStatus = () => {
     if (memoryUsage > 80) {
-      return { color: 'text-red-600', message: t('systemInfo.memoryStatusHigh') };
+      return {
+        color: "text-red-600",
+        message: t("systemInfo.memoryStatusHigh"),
+      };
     } else if (memoryUsage > 60) {
-      return { color: 'text-yellow-600', message: t('systemInfo.memoryStatusMedium') };
+      return {
+        color: "text-yellow-600",
+        message: t("systemInfo.memoryStatusMedium"),
+      };
     }
-    return { color: 'text-green-600', message: t('systemInfo.memoryStatusNormal') };
+    return {
+      color: "text-green-600",
+      message: t("systemInfo.memoryStatusNormal"),
+    };
   };
 
   const memoryStatus = getMemoryStatus();
@@ -94,7 +108,7 @@ const SystemInfo: React.FC<SystemInfoProps> = ({ isVisible, isMonitoring }) => {
         {/* メモリ使用量 */}
         <div className="flex items-center gap-2">
           <FaMemory className="w-4 h-4 text-gray-600" />
-          <span className="text-gray-700">{t('systemInfo.memory')}:</span>
+          <span className="text-gray-700">{t("systemInfo.memory")}:</span>
           <span className={`font-medium ${memoryStatus.color}`}>
             {memoryUsage}% ({memoryStatus.message})
           </span>
@@ -104,28 +118,20 @@ const SystemInfo: React.FC<SystemInfoProps> = ({ isVisible, isMonitoring }) => {
         {batteryLevel !== null && (
           <div className="flex items-center gap-2">
             <span className="text-lg">{getBatteryIcon()}</span>
-            <span className="text-gray-700">{t('systemInfo.battery')}:</span>
-            <span className={`font-medium ${batteryLevel < 20 ? 'text-red-600' : 'text-gray-800'}`}>
-              {batteryLevel}%
-              {isCharging && ` (${t('systemInfo.charging')})`}
+            <span className="text-gray-700">{t("systemInfo.battery")}:</span>
+            <span
+              className={`font-medium ${batteryLevel < 20 ? "text-red-600" : "text-gray-800"}`}
+            >
+              {batteryLevel}%{isCharging && ` (${t("systemInfo.charging")})`}
             </span>
           </div>
         )}
 
-        {/* 監視状態 */}
-        <div className="flex items-center gap-2">
-          <FaDesktop className="w-4 h-4 text-gray-600" />
-          <span className="text-gray-700">{t('systemInfo.monitoring')}:</span>
-          <span className={`font-medium ${isMonitoring ? 'text-green-600' : 'text-gray-500'}`}>
-            {isMonitoring ? t('systemInfo.monitoringActive') : t('systemInfo.monitoringInactive')}
-          </span>
-        </div>
-
         {/* 警告メッセージ */}
-        {batteryLevel !== null && batteryLevel < 20 && !isCharging && isMonitoring && (
+        {batteryLevel !== null && batteryLevel < 20 && !isCharging && (
           <div className="flex items-center gap-2 text-yellow-600 mt-2 pt-2 border-t border-gray-200">
             <FaExclamationTriangle className="w-4 h-4" />
-            <span>{t('systemInfo.batteryWarning')}</span>
+            <span>{t("systemInfo.batteryWarning")}</span>
           </div>
         )}
       </div>
