@@ -320,11 +320,11 @@ function App() {
     }
   };
 
-  // 監視設定の更新関数
+  // 監視設定の更新関数（enabledは常にtrue）
   const updateMonitorConfig = async (
     updates: Partial<typeof monitorConfig>,
   ) => {
-    const newConfig = { ...monitorConfig, ...updates };
+    const newConfig = { ...monitorConfig, ...updates, enabled: true };
     setMonitorConfig(newConfig);
 
     // 設定を保存
