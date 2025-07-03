@@ -165,6 +165,16 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
     [],
   );
 
+  // 最近の記憶を更新
+  const refreshRecentMemories = useCallback(async () => {
+    try {
+      const memories = await window.electron.memory.searchMemories("", 5);
+      setRecentMemories(memories);
+    } catch (error) {
+      console.error("Failed to refresh recent memories:", error);
+    }
+  }, []);
+
   // タグ管理
   const getAllTags = useCallback(async () => {
     try {
@@ -402,7 +412,7 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
     [recordAction, updateSuggestions],
   );
 
-  // アプリ切り替え時にアクションを記録
+  // ���プリ切り替え時にアクションを記録
   const recordAppSwitch = useCallback(
     async (appName: string, windowTitle: string) => {
       await recordAction("app_switch", {
