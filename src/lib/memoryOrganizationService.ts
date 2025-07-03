@@ -1,4 +1,4 @@
-import userMemoryStore from "./userMemoryStore";
+import userMemoryStore from "../../main/lib/userMemoryStore";
 
 // 記憶統合・整理のための高度なサービス
 export interface MemoryCluster {
@@ -677,7 +677,7 @@ class MemoryOrganizationService {
   }
 
   private async createMemoryCluster(cluster: MemoryCluster): Promise<void> {
-    // クラスター保存機能の実装
+    // クラスター保存機能の実��
     // 実装は userMemoryStore の機能拡張が必要
   }
 

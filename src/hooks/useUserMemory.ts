@@ -428,7 +428,7 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
         tags,
       });
 
-      // 提案を更��
+      // ���案を更��
       await updateSuggestions(activeWindow?.app, query);
     },
     [recordAction, updateSuggestions],
@@ -571,11 +571,6 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
     getMemoryStats,
     getMemoryQualityScore,
 
-    // 高度な機能
-    generateAdvancedSuggestions,
-    organizeMemories,
-    performAutoOrganization,
-
     // 提案
     updateSuggestions,
     generateAdvancedSuggestions,
@@ -583,7 +578,6 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
     // 高度な機能
     organizeMemories,
     performAutoOrganization,
-    getMemoryQualityScore,
 
     // データ管理
     exportUserData,

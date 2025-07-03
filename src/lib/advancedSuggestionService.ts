@@ -1,4 +1,4 @@
-import userMemoryStore from "./userMemoryStore";
+import userMemoryStore from "../../main/lib/userMemoryStore";
 import { memoryOrganizationService } from "./memoryOrganizationService";
 
 // ユーザーの長期目標と行動分析
@@ -151,7 +151,7 @@ class AdvancedSuggestionService {
     const creativeSuggestions = await this.generateCreativeSuggestions(context);
     suggestions.push(...creativeSuggestions);
 
-    // 提案をスコアリングして上位を返す
+    // 提案をスコアリングして上位を返���
     return this.rankAndFilterSuggestions(suggestions, context, limit);
   }
 
@@ -175,7 +175,7 @@ class AdvancedSuggestionService {
           type: "goal_progress",
           priority: "high",
           title: `目標期限間近: ${goal.title}`,
-          description: `「${goal.title}」の期限まで1週間を切りました。進捗を確認し、必��なアクションを取りましょう。`,
+          description: `「${goal.title}」の期限まで1週間を切りました。進捗を確認し、必要なアクションを取りましょう。`,
           rationale: `現在の進捗: ${Math.round(goal.progress * 100)}%。期限までに達成するためのスプリントが必要です。`,
           actionItems: this.generateGoalActionItems(goal, context),
           estimatedImpact: 0.9,
@@ -247,7 +247,7 @@ class AdvancedSuggestionService {
         actionItems: [
           "重要な概念の学習を開始する",
           "難しい問題に挑戦する",
-          "新しいスキルの習得を始める",
+          "新しい���キルの習得を始める",
           "復習セッションを実行する",
         ],
         estimatedImpact: 0.8,
@@ -277,7 +277,7 @@ class AdvancedSuggestionService {
           "5-10分の休憩を取る",
           "軽い運動をする",
           "深呼吸エクササイズ",
-          "水分補給をする",
+          "水��補給をする",
         ],
         estimatedImpact: 0.9,
         confidence: 0.8,
@@ -434,7 +434,7 @@ class AdvancedSuggestionService {
         type: "health_reminder",
         priority: "medium",
         title: "健康的な休憩のお時間です",
-        description: `長時間の作業が続いています。体と心の健康のために休憩を取りましょう。`,
+        description: `長時間���作業が続いています。体と心の健康のために休憩を取りましょう。`,
         rationale: `${prolongedWork}時間の連続作業が検出されました。定期的な休憩は生産性向上に必須です。`,
         actionItems: [
           "立ち上がって軽く歩く",
@@ -807,7 +807,7 @@ class AdvancedSuggestionService {
     context: ContextualEnvironment,
   ): string[] {
     const actions = [
-      "現在の進捗を確認する",
+      "現在��進捗を確認する",
       "次のマイルストーンを設定する",
       "障害を特定して対策を立てる",
       "必要なリソースを準備する",
