@@ -132,19 +132,6 @@ const Header: React.FC<HeaderProps> = ({
           <FaCog className="w-4 h-4" />
         </motion.button>
 
-        {/* メモリボタン */}
-        {onMemoryClick && (
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onMemoryClick}
-            className="p-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-700 transition-colors"
-            title={t("memory")}
-          >
-            <FaBrain className="w-4 h-4" />
-          </motion.button>
-        )}
-
         {/* ショートカットヘルプボタン */}
         <motion.button
           whileHover={{ scale: 1.1 }}
@@ -179,7 +166,7 @@ const Header: React.FC<HeaderProps> = ({
         </motion.button>
       </div>
 
-      {/* ショートカ��ト一覧ツールチップ */}
+      {/* ショートカット一覧ツールチップ */}
       <AnimatePresence>
         {showShortcuts && (
           <motion.div
