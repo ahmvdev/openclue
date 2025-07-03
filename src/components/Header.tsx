@@ -121,14 +121,6 @@ const Header: React.FC<HeaderProps> = ({
 
       {/* コントロールボタン */}
       <div className="no-drag flex items-center gap-2">
-        {/* 監視状態表示（常にオン） */}
-        <div
-          className="p-2 rounded-lg bg-green-500/20 text-green-700"
-          title={t("monitoringOn")}
-        >
-          <FaEye className="w-4 h-4" />
-        </div>
-
         {/* 設定ボタン */}
         <motion.button
           whileHover={{ scale: 1.1 }}
@@ -187,7 +179,7 @@ const Header: React.FC<HeaderProps> = ({
         </motion.button>
       </div>
 
-      {/* ショートカット一覧ツールチップ */}
+      {/* ショートカ��ト一覧ツールチップ */}
       <AnimatePresence>
         {showShortcuts && (
           <motion.div
