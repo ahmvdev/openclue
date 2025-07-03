@@ -1,5 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { UserActionEntry, MemoryEntry } from "../electron";
+import {
+  memoryOrganizationService,
+  MemoryOrganizationInsights,
+} from "../lib/memoryOrganizationService";
+import {
+  advancedSuggestionService,
+  AdvancedSuggestion,
+  ContextualEnvironment,
+} from "../lib/advancedSuggestionService";
 
 interface UseUserMemoryOptions {
   autoRecord?: boolean;
