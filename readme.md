@@ -58,7 +58,6 @@ OpenClue Kai is an open-source, next-generation AI screen assistant inspired by 
 - electron-store for persistence
 
 ### Contribution
-- See [DEVELOPMENT.md](./DEVELOPMENT.md) for details
 - Pull requests welcome!
 
 ### Icon
@@ -127,7 +126,6 @@ Cluelyの思想を継承しつつ、AIがPC画面・操作履歴・音声（今�
 - electron-storeによる永続化
 
 ## 開発・コントリビュート
-- 詳細は[DEVELOPMENT.md](./DEVELOPMENT.md)参照
 - プルリク歓迎！
 
 ## アイコン仕様
