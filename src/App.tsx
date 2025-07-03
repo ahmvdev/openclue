@@ -7,6 +7,7 @@ import SystemInfo from "./components/SystemInfo";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { useScreenMonitor } from "./hooks/useScreenMonitor";
+import { useUserMemory } from "./hooks/useUserMemory";
 import { toast, Toaster } from "react-hot-toast";
 import { callGeminiAPI } from "./lib/geminiClient";
 import "./i18n";
@@ -370,7 +371,7 @@ function App() {
     }
   };
 
-  // 構造化アドバイス生成ハンドラ
+  // 構造化ア���バイス生成ハンドラ
   const handleStructuredAdvice = async () => {
     setStructuring(true);
     setStructuredAdvice(null);
