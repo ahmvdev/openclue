@@ -274,6 +274,62 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
     [],
   );
 
+  // 高度な提案生成
+  const generateAdvancedSuggestions = useCallback(
+    async (contextOverride?: Partial<ContextualEnvironment>) => {
+      try {
+        const activeWindow = await window.electron.getActiveWindow();
+
+        const context: ContextualEnvironment = {
+          timeOfDay: new Date().getHours(),
+          dayOfWeek: new Date().getDay(),
+          currentApp: activeWindow?.app,
+          recentActivity: searchHistory.slice(-5),
+          cognitiveState: inferCognitiveState(),
+          workload: inferWorkload(),
+          environmentalFactors: [],
+          ...contextOverride,
+        };
+
+        const newAdvancedSuggestions =
+          await advancedSuggestionService.generateAdvancedSuggestions(
+            context,
+            8,
+          );
+        setAdvancedSuggestions(newAdvancedSuggestions);
+
+        return newAdvancedSuggestions;
+      } catch (error) {
+        console.error("Failed to generate advanced suggestions:", error);
+        return [];
+      }
+    },
+    [searchHistory],
+  );
+
+  // 認知状態の推測
+  const inferCognitiveState =
+    useCallback((): ContextualEnvironment["cognitiveState"] => {
+      const hour = new Date().getHours();
+
+      if (hour >= 9 && hour <= 11) return "focused";
+      if (hour >= 14 && hour <= 16) return "creative";
+      if (hour >= 16 && hour <= 18) return "analytical";
+      if (hour >= 20 || hour <= 7) return "tired";
+
+      return "focused";
+    }, []);
+
+  // 作業負荷の推測
+  const inferWorkload = useCallback((): ContextualEnvironment["workload"] => {
+    const recentActivity = searchHistory.slice(-10);
+    const activityCount = recentActivity.length;
+
+    if (activityCount > 7) return "heavy";
+    if (activityCount > 3) return "medium";
+    return "light";
+  }, [searchHistory]);
+
   // スクリーンショット撮影時にアクションを記録
   const recordScreenshot = useCallback(
     async (context?: string, metadata?: Record<string, any>) => {
