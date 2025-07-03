@@ -1,7 +1,16 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { FaSync, FaTrash, FaEye, FaEyeSlash, FaClock, FaLightbulb, FaBrain } from 'react-icons/fa';
-import { useTranslation } from 'react-i18next';
+import React from "react";
+import { motion } from "framer-motion";
+import {
+  FaSync,
+  FaTrash,
+  FaEye,
+  FaEyeSlash,
+  FaClock,
+  FaLightbulb,
+  FaBrain,
+  FaQuestion,
+} from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 
 interface AdvicePanelProps {
   advice: string | null;
@@ -19,15 +28,15 @@ const AdvicePanel: React.FC<AdvicePanelProps> = ({
   suggestions = [],
 }) => {
   const { t } = useTranslation();
-  if (!advice && !isMonitoring && suggestions.length === 0) {
+  if (!advice && suggestions.length === 0) {
     return null;
   }
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('ja-JP', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      second: '2-digit'
+    return date.toLocaleTimeString("ja-JP", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
     });
   };
 
@@ -43,28 +52,11 @@ const AdvicePanel: React.FC<AdvicePanelProps> = ({
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-blue-800 flex items-center gap-2">
-              {isMonitoring ? (
-                <>
-                  <FaEye className="w-4 h-4" />
-                  <span>{t('advicePanel.monitoring')}</span>
-                </>
-              ) : (
-                <>
-                  <FaEyeSlash className="w-4 h-4" />
-                  <span>{t('advicePanel.advice')}</span>
-                </>
-              )}
+              <FaQuestion className="w-4 h-4" />
+              <span>AIアシスタント</span>
             </h3>
-            {isMonitoring && (
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              >
-                <FaSync className="w-4 h-4 text-blue-600" />
-              </motion.div>
-            )}
           </div>
-          
+
           <div className="flex items-center gap-2">
             {advice && (
               <>
@@ -75,7 +67,7 @@ const AdvicePanel: React.FC<AdvicePanelProps> = ({
                 <button
                   onClick={onClear}
                   className="p-1 rounded hover:bg-white/50 transition-colors"
-                  title={t('advicePanel.clear')}
+                  title={t("advicePanel.clear")}
                 >
                   <FaTrash className="w-3 h-3 text-gray-500" />
                 </button>
@@ -83,17 +75,11 @@ const AdvicePanel: React.FC<AdvicePanelProps> = ({
             )}
           </div>
         </div>
-        
-        {advice ? (
-          <div className="text-sm text-gray-700 leading-relaxed">
-            {advice}
-          </div>
-        ) : isMonitoring ? (
-          <div className="text-sm text-gray-600 italic">
-            画面の変化を監視しています...
-          </div>
-        ) : null}
-        
+
+        {advice && (
+          <div className="text-sm text-gray-700 leading-relaxed">{advice}</div>
+        )}
+
         {/* AI提案セクション */}
         {suggestions.length > 0 && (
           <div className="mt-3 pt-3 border-t border-blue-200">
@@ -115,17 +101,6 @@ const AdvicePanel: React.FC<AdvicePanelProps> = ({
                 </motion.div>
               ))}
             </div>
-          </div>
-        )}
-        
-        {!isMonitoring && !advice && suggestions.length === 0 && (
-          <div className="text-center py-2">
-            <button
-              onClick={onToggleMonitoring}
-              className="text-sm text-blue-600 hover:text-blue-800 underline"
-            >
-              監視を開始
-            </button>
           </div>
         )}
       </div>
