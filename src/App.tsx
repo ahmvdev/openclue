@@ -276,13 +276,23 @@ function App() {
       return t("app.geminiKeyNotSet");
     }
     try {
-      // 今後: モデルや履歴、構造化出力も柔軟に指定可能
+      // 高度なOCRを使用してコンテキストを拡張
+      const blob = await window.electron.takeScreenshot();
+      const { enhanceLLMContextWithOCR } = await import(
+        "./lib/ocrIntegrationService"
+      );
+
+      const enhancedPrompt = await enhanceLLMContextWithOCR(blob, prompt, {
+        includeOCRAnalysis: true,
+        useEnhancedPrompts: true,
+        maxOCRTextLength: 1500,
+      });
+
       const result = await callGeminiAPI({
         apiKey: geminiApiKey,
-        model: "gemini-2.5-flash", // 必要に応じて切り替え
-        prompt,
+        model: "gemini-2.5-flash",
+        prompt: enhancedPrompt,
         imageBase64: base64Image,
-        // history: [], // 必要に応じて履歴も渡せる
         outputFormat: "text",
         language: i18n.language.startsWith("en") ? "en" : "ja",
       });
