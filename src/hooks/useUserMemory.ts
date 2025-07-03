@@ -578,6 +578,12 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
 
     // 提案
     updateSuggestions,
+    generateAdvancedSuggestions,
+
+    // 高度な機能
+    organizeMemories,
+    performAutoOrganization,
+    getMemoryQualityScore,
 
     // データ管理
     exportUserData,
