@@ -232,7 +232,7 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
     }
   }, []);
 
-  // 統計情��
+  // 統計情報
   const getMemoryStats = useCallback(async () => {
     try {
       const stats = await window.electron.memory.getMemoryStats();
@@ -243,6 +243,46 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
       return null;
     }
   }, []);
+
+  // 記憶の自動整理
+  const organizeMemories = useCallback(async () => {
+    try {
+      setIsOrganizing(true);
+      const insights = await memoryOrganizationService.organizeMemories();
+      setOrganizationInsights(insights);
+      return insights;
+    } catch (error) {
+      console.error("Failed to organize memories:", error);
+      return null;
+    } finally {
+      setIsOrganizing(false);
+    }
+  }, []);
+
+  // 自動整理実行
+  const performAutoOrganization = useCallback(async () => {
+    try {
+      setIsOrganizing(true);
+      const result = await memoryOrganizationService.performAutoOrganization();
+
+      // 整理後にデータを更新
+      await refreshRecentMemories();
+      await getAllTags();
+      await getMemoryStats();
+
+      return result;
+    } catch (error) {
+      console.error("Failed to perform auto organization:", error);
+      return { merged: 0, archived: 0, clustered: 0, retagged: 0 };
+    } finally {
+      setIsOrganizing(false);
+    }
+  }, [refreshRecentMemories, getAllTags, getMemoryStats]);
+
+  // 記憶品質スコア取得
+  const getMemoryQualityScore = useCallback(() => {
+    return organizationInsights?.qualityScore || 0;
+  }, [organizationInsights]);
 
   // 最近の記憶を更新
   const refreshRecentMemories = useCallback(async () => {
@@ -388,7 +428,7 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
         tags,
       });
 
-      // 提案を更新
+      // 提案を更��
       await updateSuggestions(activeWindow?.app, query);
     },
     [recordAction, updateSuggestions],
