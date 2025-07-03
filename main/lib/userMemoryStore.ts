@@ -657,6 +657,11 @@ class UserMemoryStore {
     return suggestions.slice(0, 5);
   }
 
+  // 行動パターンを取得
+  getBehaviorPatterns(): BehaviorPattern[] {
+    return (this.store as any).get("behaviorPatterns") || [];
+  }
+
   // ユーティリティ関数
   private generateId(): string {
     return uuidv4();
