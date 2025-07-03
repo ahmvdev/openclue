@@ -25,7 +25,7 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
 
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [recentMemories, setRecentMemories] = useState<MemoryEntry[]>([]);
-  const [isRecording, setIsRecording] = useState(autoRecord);
+  const [isRecording, setIsRecording] = useState(true); // 常にオン
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<{ tag: string; count: number }[]>([]);
   const [memoryStats, setMemoryStats] = useState<any>(null);
@@ -259,7 +259,7 @@ export const useUserMemory = (options: UseUserMemoryOptions = {}) => {
     [],
   );
 
-  // スクリーン��ョット撮影時にアクションを記録
+  // スクリーンショット撮影時にアクションを記録
   const recordScreenshot = useCallback(
     async (context?: string, metadata?: Record<string, any>) => {
       const activeWindow = await window.electron.getActiveWindow();
