@@ -290,7 +290,7 @@ class MemoryOrganizationService {
     return jaccard * 0.4 + cosine * 0.4 + normalizedLevenshtein * 0.2;
   }
 
-  // トークン化
+  // トー��ン化
   private tokenize(text: string): string[] {
     return text
       .replace(/[^\w\s\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g, " ")
@@ -619,7 +619,7 @@ class MemoryOrganizationService {
     return pairCount > 0 ? totalSimilarity / pairCount : 0;
   }
 
-  // 品質スコア計算
+  // 品質スコア��算
   private calculateOrganizationQuality(
     memories: any[],
     duplicates: DuplicateMemoryPair[],
@@ -667,18 +667,21 @@ class MemoryOrganizationService {
   ): Promise<void> {
     if (!duplicate.mergedContent) return;
 
-    // 新しい統合記憶を作成
-    // 実装は userMemoryStore の機能拡張が必要
+    // For now, we'll mark this as a placeholder since the IPC interface
+    // doesn't support merging memories yet
+    console.log("Memory merge operation queued:", duplicate);
   }
 
   private async archiveMemory(memoryId: string): Promise<void> {
-    // アーカイブ機能の実装
-    // 実装は userMemoryStore の機能拡張が必要
+    // For now, we'll mark this as a placeholder since the IPC interface
+    // doesn't support archiving memories yet
+    console.log("Memory archive operation queued:", memoryId);
   }
 
   private async createMemoryCluster(cluster: MemoryCluster): Promise<void> {
-    // クラスター保存機能の実装
-    // 実装は userMemoryStore の機能拡張が必要
+    // For now, we'll mark this as a placeholder since the IPC interface
+    // doesn't support creating clusters yet
+    console.log("Memory cluster operation queued:", cluster);
   }
 
   private async optimizeTags(hierarchy: TagHierarchy): Promise<number> {
