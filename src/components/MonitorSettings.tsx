@@ -161,7 +161,6 @@ const MonitorSettings: React.FC<MonitorSettingsProps> = ({
                   value={interval}
                   onChange={(e) => onIntervalChange(Number(e.target.value))}
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                  disabled={!isEnabled}
                 />
                 <div className="flex justify-between text-xs text-gray-500">
                   <span>{t("monitorSettings.intervalMin")}</span>
@@ -183,7 +182,6 @@ const MonitorSettings: React.FC<MonitorSettingsProps> = ({
                   value={changeThreshold}
                   onChange={(e) => onThresholdChange(Number(e.target.value))}
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                  disabled={!isEnabled}
                 />
                 <div className="flex justify-between text-xs text-gray-500">
                   <span>{t("monitorSettings.thresholdMin")}</span>
